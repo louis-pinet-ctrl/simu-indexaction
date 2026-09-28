@@ -68,6 +68,14 @@
 #simu-index .radio-option.selected{background:var(--surface-000);box-shadow:inset 3px 0 0 var(--ink)}
 #simu-index .radio-group.row .radio-option.selected{border-color:var(--ink);box-shadow:none}
 
+#simu-index .opt-title{display:block;font-weight:700}
+#simu-index .opt-ex{display:block;font-style:italic;color:var(--ink-secondary);font-size:14px;line-height:20px;margin-top:2px}
+#simu-index .opt-note{display:block;color:var(--ink-secondary);font-size:14px;line-height:20px;margin-top:4px}
+#simu-index .finder{padding:var(--space-4);background:var(--surface-000);border-top:1px solid var(--ink);border-bottom:1px solid var(--border);margin-bottom:var(--space-6)}
+#simu-index .finder-title{font-weight:700;margin-bottom:var(--space-1)}
+#simu-index .finder p{font-size:15px;line-height:23px}
+#simu-index .finder p+p{color:var(--ink-secondary)}
+
 /* Boutons */
 #simu-index .button-group{display:flex;gap:var(--space-3);margin-top:var(--space-6)}
 #simu-index button{font:inherit;cursor:pointer;border-radius:0}

@@ -50,11 +50,12 @@
 <div class="info-box" id="ref-valeur" hidden></div>
 </div>
 <div class="form-group">
-<label>Périodicité de l'indexation *</label>
+<label>À quel rythme le loyer est-il indexé&nbsp;? *</label>
 <div class="radio-group row">
-<label class="radio-option"><input type="radio" name="periode" value="1" checked><span>Annuelle</span></label>
-<label class="radio-option"><input type="radio" name="periode" value="3"><span>Triennale</span></label>
+<label class="radio-option"><input type="radio" name="periode" value="1" checked><span>Chaque année</span></label>
+<label class="radio-option"><input type="radio" name="periode" value="3"><span>Tous les trois ans</span></label>
 </div>
+<p class="help">Le plus souvent chaque année, à la date anniversaire du bail. Une indexation tous les trois ans est plus rare&nbsp;: ne la confondez pas avec la révision triennale légale, qui suppose une demande.</p>
 </div>
 <div id="step1-error" class="alert alert-danger" hidden></div>
 <div class="button-group">
@@ -64,45 +65,51 @@
 
 <div class="step" data-step="2">
 <h2>La clause d'indexation</h2>
-<p class="step-intro">Relisez la clause d'échelle mobile de votre bail. Sa rédaction décide du calcul et de sa validité.</p>
+<p class="step-intro">Trois questions sur la rédaction de votre bail. Chaque réponse est illustrée par une formule courante&nbsp;: comparez-la à votre clause, les mots exacts comptent moins que le mécanisme.</p>
+<div class="finder">
+<p class="finder-title">Où trouver la clause&nbsp;?</p>
+<p>Elle figure dans l'article consacré au loyer. Son titre varie&nbsp;: «&nbsp;Indexation&nbsp;», «&nbsp;Clause d'échelle mobile&nbsp;», «&nbsp;Révision du loyer&nbsp;» ou simplement «&nbsp;Loyer&nbsp;». Repérez les mots «&nbsp;indice&nbsp;», «&nbsp;INSEE&nbsp;», «&nbsp;ILC&nbsp;» ou «&nbsp;coût de la construction&nbsp;». Pensez aussi aux avenants&nbsp;: une clause peut avoir été modifiée depuis la signature.</p>
+</div>
 <div class="form-group">
-<label>Dans quel sens la clause fait-elle varier le loyer&nbsp;? *</label>
+<label>1. Dans quel sens le loyer peut-il varier&nbsp;? *</label>
 <div class="radio-group">
-<label class="radio-option"><input type="radio" name="sens" value="symetrique" checked><span>À la hausse comme à la baisse</span></label>
-<label class="radio-option"><input type="radio" name="sens" value="hausse"><span>À la hausse seulement, ou jamais en dessous d'un loyer plancher</span></label>
-<label class="radio-option"><input type="radio" name="sens" value="tunnel"><span>Variation encadrée dans les mêmes proportions à la hausse et à la baisse (clause « tunnel »)</span></label>
-<label class="radio-option"><input type="radio" name="sens" value="forfait"><span>Hausse fixe chaque année (par exemple +1,5&nbsp;%), sans référence à un indice</span></label>
+<label class="radio-option"><input type="radio" name="sens" value="symetrique" checked><span><span class="opt-title">À la hausse comme à la baisse</span><span class="opt-ex">«&nbsp;Le loyer sera indexé chaque année en fonction de la variation de l'indice des loyers commerciaux publié par l'INSEE.&nbsp;»</span><span class="opt-note">Le cas le plus courant. Si la clause ne dit rien sur le sens, l'indice joue dans les deux sens.</span></span></label>
+<label class="radio-option"><input type="radio" name="sens" value="hausse"><span><span class="opt-title">Seulement à la hausse</span><span class="opt-ex">«&nbsp;L'indexation ne jouera qu'en cas de hausse de l'indice.&nbsp;» ou «&nbsp;Le loyer ne pourra en aucun cas être inférieur au loyer de base.&nbsp;»</span><span class="opt-note">Toute phrase qui empêche le loyer de baisser quand l'indice baisse.</span></span></label>
+<label class="radio-option"><input type="radio" name="sens" value="tunnel"><span><span class="opt-title">Variation encadrée dans les deux sens</span><span class="opt-ex">«&nbsp;La variation annuelle du loyer ne pourra excéder 3&nbsp;%, à la hausse comme à la baisse.&nbsp;»</span><span class="opt-note">On parle de clause «&nbsp;tunnel&nbsp;». Le plafond doit être le même dans les deux sens.</span></span></label>
+<label class="radio-option"><input type="radio" name="sens" value="forfait"><span><span class="opt-title">Hausse fixe chaque année, sans indice</span><span class="opt-ex">«&nbsp;Le loyer sera augmenté de 2&nbsp;% chaque année.&nbsp;»</span><span class="opt-note">Aucun indice INSEE n'est cité&nbsp;: le bail fixe lui-même le pourcentage.</span></span></label>
+<label class="radio-option"><input type="radio" name="sens" value="inconnu"><span><span class="opt-title">Je ne sais pas</span><span class="opt-note">Le calcul appliquera l'indice dans les deux sens, comme le prévoit la loi pour une échelle mobile. Le résultat signalera ce point à vérifier.</span></span></label>
 </div>
 <div class="alert alert-warning" id="sens-alert" hidden></div>
 </div>
 <div class="form-group" id="forfait-group" hidden>
 <label for="forfait_pct">Hausse annuelle prévue par la clause (%)</label>
 <input type="text" inputmode="decimal" id="forfait_pct" placeholder="ex : 1,5" autocomplete="off">
-<p class="help">Un loyer par paliers fixés dès la signature, jusqu'à un plafond connu à l'avance, n'est pas concerné : il reste licite.</p>
+<p class="help">Un loyer par paliers fixés dès la signature, jusqu'à un plafond connu à l'avance, n'est pas concerné&nbsp;: il reste licite. Exemple&nbsp;: «&nbsp;20&nbsp;000&nbsp;€ la première année, 22&nbsp;000&nbsp;€ la deuxième, 24&nbsp;000&nbsp;€ à partir de la troisième&nbsp;».</p>
 </div>
 <div class="form-group" id="tunnel-group" hidden>
 <label for="tunnel_pct">Plafond annuel de variation prévu par la clause (%)</label>
-<input type="text" inputmode="decimal" id="tunnel_pct" placeholder="ex&nbsp;: 3" autocomplete="off">
+<input type="text" inputmode="decimal" id="tunnel_pct" placeholder="ex : 3" autocomplete="off">
 </div>
 <div class="form-group">
-<label>Comment l'indexation s'applique-t-elle&nbsp;? *</label>
+<label>2. Faut-il une démarche du bailleur pour que le loyer augmente&nbsp;? *</label>
 <div class="radio-group">
-<label class="radio-option"><input type="radio" name="jeu" value="auto" checked><span>De plein droit, à chaque date anniversaire, sans formalité</span></label>
-<label class="radio-option"><input type="radio" name="jeu" value="demande"><span>Sur demande du bailleur</span></label>
+<label class="radio-option"><input type="radio" name="jeu" value="auto" checked><span><span class="opt-title">Non, l'indexation est automatique</span><span class="opt-ex">«&nbsp;de plein droit&nbsp;», «&nbsp;automatiquement&nbsp;», «&nbsp;sans qu'il soit besoin d'aucune notification&nbsp;»</span><span class="opt-note">Le cas le plus fréquent. Le loyer change à chaque date d'indexation, même si le bailleur n'envoie rien. C'est ce qui permet un rattrapage sur cinq ans.</span></span></label>
+<label class="radio-option"><input type="radio" name="jeu" value="demande"><span><span class="opt-title">Oui, le bailleur doit la demander</span><span class="opt-ex">«&nbsp;à la demande du bailleur&nbsp;», «&nbsp;sur simple demande&nbsp;», «&nbsp;le bailleur notifiera au preneur le nouveau loyer&nbsp;»</span><span class="opt-note">Tant que le bailleur n'a rien demandé, le loyer ne bouge pas.</span></span></label>
+<label class="radio-option"><input type="radio" name="jeu" value="inconnu"><span><span class="opt-title">Je ne sais pas</span><span class="opt-note">Le calcul retiendra l'indexation automatique, qui est la règle la plus fréquente. Le résultat signalera ce point à vérifier.</span></span></label>
 </div>
 </div>
 <div class="form-group" id="demande-group" hidden>
 <label for="date_demande">Date de la demande du bailleur, si elle a été faite</label>
 <input type="date" id="date_demande">
-<p class="help">Laissez vide si aucune demande n'a encore été adressée.</p>
+<p class="help">La date du courrier ou de l'avis d'échéance qui a annoncé le nouveau loyer. Laissez vide si aucune demande n'a été faite.</p>
 </div>
 <div class="form-group" id="pme-group">
-<label>Le preneur est-il une PME&nbsp;?</label>
+<label>3. Le preneur est-il une PME&nbsp;?</label>
 <div class="radio-group row">
 <label class="radio-option"><input type="radio" name="pme" value="oui" checked><span>Oui</span></label>
 <label class="radio-option"><input type="radio" name="pme" value="non"><span>Non</span></label>
 </div>
-<p class="help">Moins de 250 salariés et 50 M€ de chiffre d'affaires ou 43 M€ de bilan. Une PME bénéficie du plafonnement de l'ILC à 3,5 % sur la période du 2e trimestre 2022 au 1er trimestre 2024.</p>
+<p class="help">Une PME compte moins de 250 salariés et réalise moins de 50&nbsp;M€ de chiffre d'affaires ou 43&nbsp;M€ de total de bilan. Un restaurant indépendant en fait presque toujours partie. La question compte pour la période 2022-2024&nbsp;: la hausse de l'ILC y a été limitée à 3,5&nbsp;% par an pour les PME.</p>
 </div>
 <div id="step2-error" class="alert alert-danger" hidden></div>
 <div class="button-group">
