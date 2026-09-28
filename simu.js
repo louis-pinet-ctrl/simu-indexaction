@@ -47,6 +47,9 @@ if(d.sens==='tunnel'&&d.tunnel>0){const t=d.tunnel/100;if(r>1+t){r=1+t;flags.pus
 return{r,brut,flags}}
 
 function indexations(d){const ev=[];let facteur=1,loyerHausse=d.loyerRef,pending=null;
+// Hausse forfaitaire réputée non écrite : le loyer dû reste le loyer de référence, loyerHausse garde la clause telle qu'appliquée.
+if(d.sens==='forfait'){for(let k=1;k<200;k++){const date=addYears(d.dateEffet,k);if(date>d.dateCalc)break;
+ev.push({date,comp:null,valeur:null,variation:0,loyer:d.loyerRef,loyerHausse:r2(d.loyerRef*Math.pow(1+d.forfait/100,k)),flags:['forfait']})}return{ev,pending}}
 for(let k=1;k<200;k++){const date=addYears(d.dateEffet,k*d.periode);if(date>d.dateCalc)break;
 const comp=d.refQ+4*k*d.periode;let f=facteur,ok=true,flags=[];
 for(let j=comp-4*d.periode+4;j<=comp;j+=4){const ra=ratioAnnuel(d,j);if(!ra){ok=false;break}f*=ra.r;flags=flags.concat(ra.flags)}
@@ -71,7 +74,7 @@ for(const b of bornes){total+=loyerEnVigueur(d,ev,t,champ)*d.terme/12*days(t,b)/
 function partPeriode(d,p,debut){return d.terme/12*days(debut>p.debut?debut:p.debut,p.fin)/days(p.exig,p.fin)}
 
 function calculer(d){const{ev,pending}=indexations(d);const limite=addYears(d.dateCalc,-PRESCRIPTION_ANS);
-const champPaye=d.sens==='hausse'?'loyerHausse':'loyer';
+const champPaye=d.sens==='hausse'||d.sens==='forfait'?'loyerHausse':'loyer';
 const lignes={},periodes=echeances(d);let exigible=0,prescrit=0,restitTotale=0;
 for(const p of periodes){
   let du=montantPeriode(d,ev,p,'loyer');
@@ -96,6 +99,7 @@ return{ev,pending,annees,exigible:r2(exigible),prescrit:r2(prescrit),restitTotal
 // ---------- Contrôles juridiques ----------
 function controles(d,R){const a=[];
 if(d.sens==='hausse')a.push({niv:'danger',t:'Clause à la hausse seulement',m:'Une clause qui écarte la baisse est réputée non écrite (Cass. civ. 3e, 12 janvier 2022, n° 21-11.169). En principe, seule la stipulation qui écarte la baisse tombe : le calcul ci-dessous applique l\'indice dans les deux sens. Si la clause était jugée indivisible, le loyer dû redeviendrait le loyer de référence'+(R.restitTotale>0.5?' et le preneur pourrait récupérer '+euro(R.restitTotale)+' sur les cinq dernières années':'')+' (Cass. civ. 3e, 23 janvier 2025, n° 23-18.643).'});
+if(d.sens==='forfait')a.push({niv:'danger',t:'Hausse forfaitaire automatique',m:'Une clause qui augmente le loyer de '+String(d.forfait).replace('.',',')+' % par an, sans plafond ni limite de durée, organise une révision à la seule hausse. Elle est réputée non écrite (Cass. civ. 3e, 3 septembre 2026, n° 25-14.904, publié au Bulletin). Le loyer dû reste le loyer de référence. Le preneur peut récupérer les sommes versées en trop dans les cinq ans précédant sa demande en justice, calculées sur ce loyer (Cass. civ. 3e, 23 janvier 2025, n° 23-18.643). Vérifiez d\'abord qu\'il ne s\'agit pas d\'un loyer par paliers plafonné, fixé dès la signature, qui reste licite.'});
 if(d.sens==='tunnel'&&d.indice!=='ILC')a.push({niv:'warning',t:'Tunnel sur un indice autre que l\'ILC',m:'L\'article L. 145-38-1 du code de commerce n\'autorise expressément que l\'encadrement de la variation de l\'ILC. Sur l\'ILAT ou l\'ICC, la validité de la clause reste à analyser.'});
 else if(d.sens==='tunnel'&&d.dateEffet<new Date(Date.UTC(2026,4,28)))a.push({niv:'warning',t:'Clause tunnel antérieure au 28 mai 2026',m:'L\'article L. 145-38-1 est issu de la loi n° 2026-403 du 26 mai 2026. Son application aux baux conclus avant cette date est à vérifier au regard des dispositions transitoires de la loi.'});
 if(R.ev.some(e=>e.flags.includes('bouclier')))a.push({niv:'ok',t:'Bouclier PME appliqué',m:'La variation annuelle de l\'ILC a été plafonnée à 3,5 % pour les trimestres du 2e trimestre 2022 au 1er trimestre 2024. Ce plafonnement est définitivement acquis (loi n° 2022-1158 du 16 août 2022, art. 14).'});
@@ -133,11 +137,11 @@ const i=dernierIndicePublie(radio('indice'),d);if(i==null)return;
 document.getElementById('ref_trim').value=String(i%4+1);document.getElementById('ref_annee').value=String(Math.floor(i/4));afficherRef()}
 function afficherRef(){const i=qi(+document.getElementById('ref_annee').value,+document.getElementById('ref_trim').value),v=idx(radio('indice'),i),box=document.getElementById('ref-valeur');
 box.hidden=false;box.textContent=v!=null?radio('indice')+' du '+qLabel(i)+' : '+fr(v,radio('indice')==='ICC'?0:2):'Indice non disponible pour ce trimestre.'}
-function majSens(){const s=radio('sens'),al=document.getElementById('sens-alert');document.getElementById('tunnel-group').hidden=s!=='tunnel';
-if(s==='hausse'){al.hidden=false;al.textContent='Cette stipulation est réputée non écrite. Le calcul appliquera l\'indice dans les deux sens et chiffrera ce que le preneur peut réclamer.'}else al.hidden=true}
+function majSens(){const s=radio('sens'),al=document.getElementById('sens-alert');document.getElementById('tunnel-group').hidden=s!=='tunnel';document.getElementById('forfait-group').hidden=s!=='forfait';
+if(s==='hausse'){al.hidden=false;al.textContent='Cette stipulation est réputée non écrite. Le calcul appliquera l\'indice dans les deux sens et chiffrera ce que le preneur peut réclamer.'}else if(s==='forfait'){al.hidden=false;al.textContent='Une hausse fixe et automatique, sans plafond ni limite de durée, est réputée non écrite (Cass. civ. 3e, 3 septembre 2026, n° 25-14.904). Le calcul retiendra le loyer de référence et chiffrera la restitution due au preneur.'}else al.hidden=true}
 function majPME(){document.getElementById('pme-group').hidden=radio('indice')!=='ILC'}
 
-const CHAMPS=['date_effet','loyer_ref','ref_trim','ref_annee','tunnel_pct','date_demande','loyer_paye','date_paye'];
+const CHAMPS=['date_effet','loyer_ref','ref_trim','ref_annee','tunnel_pct','forfait_pct','date_demande','loyer_paye','date_paye'];
 function sauver(){try{const o={t:Date.now()};CHAMPS.forEach(id=>o[id]=document.getElementById(id).value);
 ['indice','periode','sens','jeu','pme','terme'].forEach(n=>o[n]=radio(n));localStorage.setItem('simu_index',JSON.stringify(o))}catch(e){}}
 function charger(){try{const o=JSON.parse(localStorage.getItem('simu_index'));if(!o||Date.now()-o.t>7*86400000)return;
@@ -158,7 +162,8 @@ if(de>today())return stepErr(1,'La date de prise d\'effet ne peut pas être post
 if(!num('loyer_ref'))return stepErr(1,'Indiquez le loyer annuel HT fixé à cette date, par exemple 24 000.'),false;
 const i=qi(+document.getElementById('ref_annee').value,+document.getElementById('ref_trim').value);
 if(idx(radio('indice'),i)==null)return stepErr(1,'L\'indice de base choisi n\'est pas disponible. Choisissez un trimestre publié.'),false}
-if(s===2){if(radio('sens')==='tunnel'){const t=num('tunnel_pct');if(!t||t>=50)return stepErr(2,'Indiquez le plafond annuel de variation prévu par la clause, par exemple 3.'),false}}
+if(s===2){if(radio('sens')==='forfait'){const f=num('forfait_pct');if(!f||f>=50)return stepErr(2,'Indiquez la hausse annuelle prévue par la clause, par exemple 1,5.'),false}
+if(radio('sens')==='tunnel'){const t=num('tunnel_pct');if(!t||t>=50)return stepErr(2,'Indiquez le plafond annuel de variation prévu par la clause, par exemple 3.'),false}}
 if(s===3){if(!num('loyer_paye'))return stepErr(3,'Indiquez le loyer annuel HT actuellement payé.'),false;
 const dp=parseDate(document.getElementById('date_paye').value),de=parseDate(document.getElementById('date_effet').value),dc=parseDate(document.getElementById('date_calcul').value)||today();
 if(!dp)return stepErr(3,'Indiquez depuis quand ce loyer est payé.'),false;
@@ -176,7 +181,7 @@ return true}
 
 function lireDonnees(){return{dateEffet:parseDate(document.getElementById('date_effet').value),loyerRef:num('loyer_ref'),indice:radio('indice'),
 refQ:qi(+document.getElementById('ref_annee').value,+document.getElementById('ref_trim').value),periode:+radio('periode'),
-sens:radio('sens'),tunnel:num('tunnel_pct'),jeu:radio('jeu'),dateDemande:parseDate(document.getElementById('date_demande').value),
+sens:radio('sens'),tunnel:num('tunnel_pct'),forfait:num('forfait_pct'),jeu:radio('jeu'),dateDemande:parseDate(document.getElementById('date_demande').value),
 pme:radio('indice')==='ILC'&&radio('pme')==='oui',loyerPaye:num('loyer_paye'),datePaye:parseDate(document.getElementById('date_paye').value),
 terme:+radio('terme'),dateCalc:parseDate(document.getElementById('date_calcul').value)||today()}}
 function lireContact(){return{profil_utilisateur:document.getElementById('profil_utilisateur').value,nom:document.getElementById('nom').value.trim(),
@@ -195,7 +200,7 @@ document.getElementById('summary').innerHTML=
 '<div class="kpi hl"><div class="k-label">'+sensLbl+'</div><div class="k-value">'+euro(Math.abs(R.exigible))+'</div><div class="k-sub">échéances depuis le '+fmtDate(R.limite)+(R.prescrit>0.5?' · '+euro(R.prescrit)+' prescrits':'')+'</div></div>';
 document.getElementById('alerts').innerHTML=A.map(a=>'<div class="alert alert-'+(a.niv==='info'?'warning':a.niv)+'"><strong>'+a.t+'</strong>'+a.m+'</div>').join('');
 const tb=document.querySelector('#table-index tbody');let h='<tr><td>'+fmtDate(d.dateEffet)+'</td><td>'+d.indice+' '+qLabel(d.refQ)+' · '+fr(idx(d.indice,d.refQ),d.indice==='ICC'?0:2)+'</td><td class="num">base</td><td class="num">'+euro(d.loyerRef,true)+'</td></tr>';
-R.ev.forEach(e=>{const pills=e.flags.map(f=>' <span class="pill pill-cap">'+(f==='bouclier'?'Bouclier 3,5 %':'Tunnel')+'</span>').join('');
+R.ev.forEach(e=>{if(e.flags.includes('forfait')){h+='<tr><td>'+fmtDate(e.date)+'</td><td>Hausse forfaitaire écartée <span class="pill pill-cap">Réputée non écrite</span><br><span class="note">Clause appliquée : '+euro(e.loyerHausse,true)+'</span></td><td class="num">'+pct(0)+'</td><td class="num">'+euro(e.loyer,true)+'</td></tr>';return}const pills=e.flags.map(f=>' <span class="pill pill-cap">'+(f==='bouclier'?'Bouclier 3,5 %':'Tunnel')+'</span>').join('');
 h+='<tr><td>'+fmtDate(e.date)+'</td><td>'+d.indice+' '+qLabel(e.comp)+' · '+fr(e.valeur,d.indice==='ICC'?0:2)+pills+'</td><td class="num '+(e.variation>=0?'pos':'neg')+'">'+pct(e.variation)+'</td><td class="num">'+euro(e.loyer,true)+'</td></tr>'});
 tb.innerHTML=h;
 document.getElementById('table-note').textContent='Méthode : loyer de référence multiplié par la variation de l\'indice du même trimestre, à '+(d.periode===1?'un an':'trois ans')+' d\'écart. '+(R.ev.some(e=>e.flags.length)?'Les plafonds sont appliqués année par année puis chaînés. ':'')+'Montants arrondis au centime.';
@@ -209,7 +214,8 @@ document.getElementById('results').hidden=false;document.getElementById('results
 document.querySelectorAll('#simu-index .progress-step').forEach(p=>{p.classList.remove('active');p.classList.add('completed')});scrollToSim()}
 
 // ---------- Textes ----------
-function recapIndexations(d,R){return R.ev.map(e=>'- '+fmtLong(e.date)+' : '+d.indice+' du '+qLabel(e.comp)+' ('+fr(e.valeur,d.indice==='ICC'?0:2)+'), '+pct(e.variation)+', loyer annuel '+euro(e.loyer,true)+' HT'+(e.flags.includes('bouclier')?' (plafonné à 3,5 %)':'')).join('\n')||'- Aucune date d\'indexation échue.'}
+function recapIndexations(d,R){if(d.sens==='forfait')return R.ev.map(e=>'- '+fmtLong(e.date)+' : hausse forfaitaire écartée, loyer dû '+euro(e.loyer,true)+' HT (la clause aurait porté le loyer à '+euro(e.loyerHausse,true)+' HT)').join('\n')||'- Aucune date anniversaire échue.';
+return R.ev.map(e=>'- '+fmtLong(e.date)+' : '+d.indice+' du '+qLabel(e.comp)+' ('+fr(e.valeur,d.indice==='ICC'?0:2)+'), '+pct(e.variation)+', loyer annuel '+euro(e.loyer,true)+' HT'+(e.flags.includes('bouclier')?' (plafonné à 3,5 %)':'')).join('\n')||'- Aucune date d\'indexation échue.'}
 function pointsControle(A){return A.length?A.map(a=>'⚠ '+a.t+' : '+a.m).join('\n'):'Aucun point d\'alerte sur les éléments renseignés.'}
 function genTexte(type){const{d,R,A}=resultat;const ref=d.indice+' du '+qLabel(d.refQ)+' ('+fr(idx(d.indice,d.refQ),d.indice==='ICC'?0:2)+')';
 const du=R.exigible>0.5,trop=R.exigible<-0.5;
@@ -219,15 +225,17 @@ if(type==='analyse_p')return 'INDEXATION DU LOYER - ANALYSE CÔTÉ PRENEUR\n\n'+
 (R.prescrit>0.5?'\n'+euro(R.prescrit,true)+' sont prescrits et ne peuvent plus être réclamés.':'')+
 '\n\nIndexations successives :\n'+recapIndexations(d,R)+'\n\nPoints de contrôle :\n'+pointsControle(A)+
 '\n\nAvant de répondre au bailleur :\n- Ne reconnaissez pas la dette par écrit tant que le calcul n\'est pas vérifié : une reconnaissance interrompt la prescription (article 2240 du code civil).\n- Demandez le détail du calcul, les indices retenus et la date de chaque indexation.\n- Vérifiez la rédaction exacte de la clause : sens de la variation, indice de base, jeu automatique ou sur demande.\n- Un commandement de payer visant la clause résolutoire laisse un mois pour régler (article L. 145-41 du code de commerce). Des délais de paiement peuvent être demandés au juge (article 1343-5 du code civil).\n\nPièces à réunir : le bail et ses avenants, les avis d\'échéance depuis le '+fmtLong(d.datePaye)+', les courriers du bailleur sur le loyer.';
-if(type==='courrier_p'){if(trop||d.sens==='hausse')return 'Objet : Indexation du loyer - demande de régularisation\n\nMadame, Monsieur,\n\nJe suis titulaire du bail commercial portant sur les locaux que vous me louez, dont le loyer a été fixé à '+euro(d.loyerRef,true)+' HT par an à compter du '+fmtLong(d.dateEffet)+'.\n\n'+
+if(type==='courrier_p'){if(trop||d.sens==='hausse'||d.sens==='forfait')return 'Objet : Indexation du loyer - demande de régularisation\n\nMadame, Monsieur,\n\nJe suis titulaire du bail commercial portant sur les locaux que vous me louez, dont le loyer a été fixé à '+euro(d.loyerRef,true)+' HT par an à compter du '+fmtLong(d.dateEffet)+'.\n\n'+
+(d.sens==='forfait'?'Le bail prévoit une augmentation automatique du loyer de '+String(d.forfait).replace('.',',')+' % par an, sans plafond ni limite de durée. Une telle clause organise une révision du loyer à la seule hausse. Elle est réputée non écrite (Cass. civ. 3e, 3 septembre 2026, n° 25-14.904). Le loyer dû reste donc de '+euro(d.loyerRef,true)+' HT par an.\n\n':'')+
 (d.sens==='hausse'?'La clause d\'indexation du bail ne joue qu\'à la hausse. Une telle stipulation est réputée non écrite (Cass. civ. 3e, 12 janvier 2022, n° 21-11.169). L\'indice doit donc s\'appliquer dans les deux sens.\n\n':'')+
-'Selon mon calcul, fondé sur l\''+NOM_INDICE[d.indice]+', le loyer dû au '+fmtLong(d.dateCalc)+' s\'établit à '+euro(R.loyerDu,true)+' HT par an. '+(trop?'Sur les cinq dernières années, j\'ai réglé '+euro(-R.exigible,true)+' de plus que le loyer dû.':'')+'\n\nIndexations retenues :\n'+recapIndexations(d,R)+'\n\nJe vous remercie de bien vouloir régulariser la situation'+(trop?' et me restituer cette somme':'')+', ou de me communiquer votre propre calcul, avec les indices retenus, dans un délai de trente jours.\n\nJe vous prie d\'agréer, Madame, Monsieur, mes salutations distinguées.';
+(d.sens==='forfait'?'':'Selon mon calcul, fondé sur l\''+NOM_INDICE[d.indice]+', le loyer dû au '+fmtLong(d.dateCalc)+' s\'établit à '+euro(R.loyerDu,true)+' HT par an. ')+(trop?'Sur les cinq dernières années, j\'ai réglé '+euro(-R.exigible,true)+' de plus que le loyer dû.':'')+'\n\n'+(d.sens==='forfait'?'Détail par date anniversaire':'Indexations retenues')+' :\n'+recapIndexations(d,R)+'\n\nJe vous remercie de bien vouloir régulariser la situation'+(trop?' et me restituer cette somme':'')+', ou de me communiquer '+(d.sens==='forfait'?'votre position':'votre propre calcul, avec les indices retenus')+', dans un délai de trente jours.\n\nJe vous prie d\'agréer, Madame, Monsieur, mes salutations distinguées.';
 return 'Objet : Indexation du loyer - demande de décompte\n\nMadame, Monsieur,\n\nJe suis titulaire du bail commercial portant sur les locaux que vous me louez, dont le loyer a été fixé à '+euro(d.loyerRef,true)+' HT par an à compter du '+fmtLong(d.dateEffet)+'.\n\nAfin de vérifier l\'application de la clause d\'indexation, je vous remercie de me communiquer un décompte détaillé : date de chaque indexation, indices comparés et loyer qui en résulte.\n\nÀ réception, je reviendrai vers vous sur les modalités de régularisation éventuelle.\n\nLe présent courrier ne vaut pas reconnaissance d\'une somme due.\n\nJe vous prie d\'agréer, Madame, Monsieur, mes salutations distinguées.'}
 if(type==='analyse_b')return 'INDEXATION DU LOYER - ANALYSE CÔTÉ BAILLEUR\n\n'+base+'\n\n'+
 (du?'Rappel exigible : '+euro(R.exigible,true)+' HT, sur les échéances postérieures au '+fmtLong(R.limite)+'.':trop?'Attention : le loyer perçu dépasse le loyer indexé de '+euro(-R.exigible,true)+' sur cinq ans. Le preneur peut en demander la restitution.':'Le loyer perçu correspond au loyer indexé.')+
 (R.prescrit>0.5?'\nPrescrit : '+euro(R.prescrit,true)+'. Chaque échéance se prescrit par cinq ans (article 2224 du code civil) : chaque mois d\'attente fait perdre une échéance.':'')+
 '\n\nIndexations successives :\n'+recapIndexations(d,R)+'\n\nPoints de contrôle :\n'+pointsControle(A)+
 '\n\nPour sécuriser la demande :\n- Adressez-la par lettre recommandée avec avis de réception ou par commissaire de justice. La mise en demeure fait courir les intérêts au taux légal (article 1344-1 du code civil).\n- Seule une demande en justice, une mesure d\'exécution ou une reconnaissance du preneur interrompt la prescription (articles 2240 à 2244 du code civil). Un simple courrier ne l\'interrompt pas.\n- Joignez le détail des indices : un décompte vérifiable limite la contestation.\n- Un échéancier amiable évite souvent le contentieux.'+(d.sens==='hausse'?'\n- Votre clause ne joue qu\'à la hausse : elle est exposée. Ne réclamez pas plus que l\'application de l\'indice dans les deux sens.':'');
+if(d.sens==='forfait')return 'Aucun modèle de demande n\'est proposé.\n\nLa clause de hausse forfaitaire automatique est réputée non écrite (Cass. civ. 3e, 3 septembre 2026, n° 25-14.904). Réclamer une hausse sur ce fondement exposerait à une demande de restitution des sommes perçues depuis cinq ans.\n\nPour faire évoluer le loyer : révision triennale légale (article L. 145-38 du code de commerce) ou avenant instituant une clause d\'indexation sur l\'ILC, jouant à la hausse comme à la baisse.';
 return 'Objet : Application de la clause d\'indexation - rappel de loyers\n\nLettre recommandée avec avis de réception\n\nMadame, Monsieur,\n\nLe bail commercial qui nous lie stipule une indexation '+(d.periode===1?'annuelle':'triennale')+' du loyer sur l\''+NOM_INDICE[d.indice]+'. Le loyer a été fixé à '+euro(d.loyerRef,true)+' HT par an à compter du '+fmtLong(d.dateEffet)+', sur la base de l\'indice du '+qLabel(d.refQ)+'.\n\n'+
 (d.jeu==='demande'?'Par la présente, je vous demande l\'application de cette clause.\n\n':'')+
 'En application de cette clause, le loyer s\'établit comme suit :\n'+recapIndexations(d,R)+'\n\nLe loyer dû à ce jour est donc de '+euro(R.loyerDu,true)+' HT par an, contre '+euro(d.loyerPaye,true)+' HT réglés actuellement.\n\n'+

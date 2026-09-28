@@ -52,4 +52,11 @@ t('clause à la hausse seule : le trop-payé du locataire apparaît quand l\'ind
   const d={...base,sens:'hausse',dateEffet:parseDate('2024-07-01'),loyerRef:30000,refQ:qi(2024,3),dateCalc:parseDate('2026-09-28'),loyerPaye:30000,datePaye:parseDate('2024-07-01')};
   const R=calculer(d);assert.ok(R.loyerDu<30000);assert.ok(R.exigible<0);
 });
+t('hausse forfaitaire réputée non écrite : restitution calculée sur le loyer de référence',()=>{
+  const d={...base,sens:'forfait',forfait:1.5,dateEffet:parseDate('2018-01-01'),loyerRef:20000,refQ:qi(2017,3),dateCalc:parseDate('2026-09-28'),loyerPaye:r(20000*Math.pow(1.015,8)),datePaye:parseDate('2026-01-01')};
+  const R=calculer(d);assert.strictEqual(R.loyerDu,20000);assert.ok(R.exigible<0);
+  // cinq dernières années : trop-payé = somme des hausses perçues
+  assert.ok(Math.abs(R.exigible)>5000&&Math.abs(R.exigible)<9000,'trop-payé '+R.exigible);
+});
+function r(x){return Math.round(x*100)/100}
 console.log(n+' tests passés');

@@ -20,6 +20,8 @@ Chaque trimestre, l'INSEE publie ILC, ILAT et ICC (fin mars, fin juin, fin septe
 
 ## Règles de fond appliquées (vérifiées sur Légifrance le 28/09/2026)
 
+- Hausse forfaitaire automatique sans plafond ni durée : réputée non écrite (Cass. 3e civ., 3 sept. 2026, n° 25-14.904, FS-B). Divisibilité confirmée : 4 juil. 2024 n° 23-13.285, 22 mai 2025 n° 23-23.336, 18 déc. 2025 n° 24-12.218.
+
 - Indexation : art. L.112-1 et L.112-2 CMF ; clause à la hausse seule réputée non écrite, seule la stipulation prohibée tombe (Cass. 3e civ., 12 janv. 2022, n° 21-11.169).
 - Clause tunnel symétrique sur l'ILC : art. L.145-38-1 C. com. (loi n° 2026-403 du 26 mai 2026, en vigueur le 28/05/2026).
 - Bouclier ILC 3,5 % pour les PME, T2 2022 à T1 2024, définitivement acquis : loi n° 2022-1158, art. 14.
