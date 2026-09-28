@@ -3,7 +3,7 @@ const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('ass
 const ctx={window:{},document:{addEventListener(){},createElement(){return{}},head:{appendChild(){}}},console,Intl,Date,Math,JSON,Promise,setTimeout,clearTimeout};
 ctx.window=ctx;vm.createContext(ctx);
 for(const f of['indices.js','simu.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'..',f),'utf8'),ctx);
-const{calculer,qi,parseDate,idx,chronologie}=ctx;const EXEMPLE=vm.runInContext('EXEMPLE',ctx);
+const{calculer,qi,parseDate,idx,chronologie,tauxEffort}=ctx;const EXEMPLE=vm.runInContext('EXEMPLE',ctx);
 const base={indice:'ILC',periode:1,sens:'symetrique',tunnel:0,jeu:'auto',dateDemande:null,pme:false,terme:1};
 let n=0;function t(nom,fn){fn();n++;console.log('ok',nom)}
 
@@ -63,5 +63,12 @@ function r(x){return Math.round(x*100)/100}
 t('exemple commenté : montants stables et chronologie complète',()=>{
   const R=calculer(EXEMPLE);assert.strictEqual(R.exigible,9073.31);assert.strictEqual(R.prescrit,25.81);assert.strictEqual(R.ev.length,6);
   const h=chronologie(EXEMPLE,R);assert.ok(h.includes('Limite de prescription')&&h.includes('103,24'));
+});
+t('taux d\'effort : avant, après, année du rattrapage',()=>{
+  const d={...EXEMPLE,ca:320000,charges:3000};const R=calculer(d),L=tauxEffort(d,R);
+  assert.strictEqual(L.length,4);
+  assert.ok(Math.abs(L[0].v-27000/320000)<1e-9);
+  assert.ok(Math.abs(L[2].v-(R.loyerDu+3000+R.exigible)/320000)<1e-9);
+  assert.strictEqual(tauxEffort({...EXEMPLE},R),null);
 });
 console.log(n+' tests passés');

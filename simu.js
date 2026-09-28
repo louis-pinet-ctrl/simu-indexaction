@@ -145,12 +145,12 @@ return h}
 function friseCourte(d,R,o){o=o||{};const I0=idx(d.indice,d.refQ),rows=[];
 rows.push({t:d.dateEffet,cls:'',main:'Loyer de départ'+NB+': '+euro(d.loyerRef,true),side:d.sens==='forfait'?'':d.indice+' '+nb(I0,d.indice)});
 R.ev.forEach(e=>{const ec=e.loyer-payeAu(d,R,e.date),tags=[];
-  if(e.flags.includes('bouclier'))tags.push('Bouclier 3,5'+NB+'%');
+  if(e.flags.includes('bouclier'))tags.push(tip('Bouclier 3,5'+NB+'%','bouclier'));
   if(e.flags.includes('tunnel'))tags.push('Tunnel');
   if(e.flags.includes('forfait'))tags.push('Hausse écartée');
   else if(e.variation<0)tags.push('Baisse');
   rows.push({t:e.date,cls:e.date<R.limite?'old':'',main:'Loyer dû'+NB+': '+euro(e.loyer,true),side:(Math.abs(ec)<0.005?'aucun écart':(ec>0?'non payé ':'payé en trop ')+euro(Math.abs(ec),true)+' par an'),tags})});
-if(R.limite>d.dateEffet)rows.push({t:R.limite,cls:'cut',main:'Limite de prescription',side:'Échéances antérieures perdues, loyer indexé acquis'});
+if(R.limite>d.dateEffet)rows.push({t:R.limite,cls:'cut',main:'Limite de '+tip('prescription','prescription'),side:'Échéances antérieures perdues, loyer indexé acquis'});
 rows.sort((a,b)=>a.t-b.t);
 let h='<ol class="frise">'+rows.map(r=>'<li class="f-row '+r.cls+'"><span class="f-date">'+fmtLong(r.t)+'</span><span class="f-main">'+r.main+(r.tags||[]).map(x=>' <span class="pill pill-cap">'+x+'</span>').join('')+'</span><span class="f-side">'+r.side+'</span></li>').join('');
 const tot=R.exigible>=0?'Rattrapage exigible'+NB+': '+euro(R.exigible,true):'Trop-payé à restituer'+NB+': '+euro(-R.exigible,true);
@@ -159,14 +159,68 @@ return h}
 function calculsTypes(d,R){const I0=idx(d.indice,d.refQ),e1=R.ev[0],eb=R.ev.find(e=>e.flags.includes('bouclier')),g=segments(R).find(x=>x.prescrit===false);
 const c=[];
 if(e1)c.push({t:'La formule',v:euro(d.loyerRef,true)+' × '+nb(e1.valeur,d.indice)+' ÷ '+nb(I0,d.indice)+' = '+euro(e1.loyer,true),n:'Loyer × nouvel indice ÷ indice de base. Chaque année repart du loyer précédent.'});
-if(eb){const brut=idx(d.indice,eb.comp)/idx(d.indice,eb.comp-4)-1;c.push({t:'Le bouclier PME',v:euro(eb.prec,true)+' × 1,035 = '+euro(eb.loyer,true),n:'En '+eb.date.getUTCFullYear()+', l\'ILC monte de '+pct(brut)+'. La hausse est ramenée à 3,5'+NB+'%, définitivement.'})}
+if(eb){const brut=idx(d.indice,eb.comp)/idx(d.indice,eb.comp-4)-1;c.push({t:tip('Le bouclier PME','bouclier'),v:euro(eb.prec,true)+' × 1,035 = '+euro(eb.loyer,true),n:'En '+eb.date.getUTCFullYear()+', l\'ILC monte de '+pct(brut)+'. La hausse est ramenée à 3,5'+NB+'%, définitivement.'})}
 if(R.limite>d.dateEffet&&g){const dueA=loyerEnVigueur(d,R.ev,g.debut,'loyer'),paidA=payeAu(d,R,g.debut);
-  c.push({t:'La prescription',v:euro(dueA-paidA,true)+' × '+(g.n*d.terme)+'/12 = '+euro((g.du-g.paye)*g.n,true),n:'Seuls comptent les mois postérieurs au '+fmtLong(R.limite)+'. Les mois antérieurs sont prescrits.'})}
+  c.push({t:tip('La prescription','prescription'),v:euro(dueA-paidA,true)+' × '+(g.n*d.terme)+'/12 = '+euro((g.du-g.paye)*g.n,true),n:'Seuls comptent les mois postérieurs au '+fmtLong(R.limite)+'. Les mois antérieurs sont prescrits.'})}
 return '<div class="calc-types">'+c.map(x=>'<div class="ct"><p class="ct-t">'+x.t+'</p><p class="ct-v">'+x.v+'</p><p class="ct-n">'+x.n+'</p></div>').join('')+'</div>'}
 const EXEMPLE={indice:'ILC',periode:1,sens:'symetrique',tunnel:0,forfait:0,jeu:'auto',dateDemande:null,pme:true,terme:1,
 dateEffet:parseDate('2020-07-01'),loyerRef:24000,refQ:qi(2020,1),loyerPaye:24000,datePaye:parseDate('2020-07-01'),dateCalc:parseDate('2026-09-28')};
 function renderExemple(){const el=document.getElementById('chrono-exemple');if(!el||!window.INDICES)return;
 try{const R=calculer(EXEMPLE);el.innerHTML=friseCourte(EXEMPLE,R,{fin:'Le bailleur réclame'})+calculsTypes(EXEMPLE,R)}catch(e){}}
+
+
+// ---------- Glossaire et infobulles ----------
+const GLOSSAIRE={
+ilc:'Indice des loyers commerciaux, publié chaque trimestre par l\'INSEE. C\'est l\'indice de référence du commerce, de l\'artisanat et de la restauration.',
+ilat:'Indice des loyers des activités tertiaires, publié chaque trimestre par l\'INSEE. Il vise les bureaux et les professions libérales.',
+icc:'Indice du coût de la construction, publié par l\'INSEE. Plus volatil que l\'ILC, il figure surtout dans les baux anciens.',
+base:'Le chiffre de départ du calcul. Le loyer évolue ensuite exactement comme l\'indice depuis ce trimestre.',
+echelle:'Autre nom de la clause d\'indexation. Le loyer suit automatiquement un indice, à la hausse comme à la baisse.',
+rne:'La clause est traitée comme si elle n\'avait jamais existé. Le reste du bail continue de s\'appliquer.',
+tunnel:'Clause qui limite la variation annuelle du loyer à un même pourcentage, à la hausse comme à la baisse.',
+pme:'Entreprise de moins de 250 salariés, avec moins de 50 M€ de chiffre d\'affaires ou 43 M€ de total de bilan.',
+bouclier:'Plafond légal : pour une PME, la hausse annuelle de l\'ILC est limitée à 3,5 % du 2e trimestre 2022 au 1er trimestre 2024. L\'excédent ne se rattrape jamais.',
+echeance:'Date à laquelle le loyer doit être payé : chaque mois ou chaque trimestre, le plus souvent d\'avance.',
+prescription:'Délai au-delà duquel une somme ne peut plus être réclamée. Pour un loyer, cinq ans à compter de chaque échéance.',
+rattrapage:'Les loyers indexés que le preneur n\'a pas payés et que le bailleur réclame pour le passé, dans la limite de cinq ans.',
+vl:'Le loyer de marché du local. Il dépend de ses caractéristiques, de la destination, des obligations des parties, des facteurs locaux de commercialité et des prix du voisinage (article L. 145-33 du code de commerce).',
+flc:'Ce qui attire la clientèle autour du local : passage, transports, commerces voisins, équipements du quartier.',
+effort:'Part du chiffre d\'affaires HT absorbée par le loyer et les charges. Repères du cabinet en restauration : moins de 7 % confortable, 7 à 8 % normal, 8 à 9 % élevé, au-delà de 9 % tendu.'};
+function tip(term,key){return '<span class="tip" tabindex="0" data-g="'+key+'">'+term+'</span>'}
+function initBulles(){const root=document.getElementById('simu-index');if(!root)return;
+const b=document.createElement('div');b.id='si-bulle';b.setAttribute('role','tooltip');b.hidden=true;root.appendChild(b);let cible=null;
+const texte=el=>el.dataset.tipx||GLOSSAIRE[el.dataset.g]||'';
+function montrer(el){const t=texte(el);if(!t)return;cible=el;b.textContent=t;b.hidden=false;el.setAttribute('aria-describedby','si-bulle');
+  const r=el.getBoundingClientRect(),w=b.offsetWidth,h=b.offsetHeight,vw=document.documentElement.clientWidth;
+  let x=Math.min(Math.max(8,r.left+r.width/2-w/2),vw-w-8),y=r.top-h-10;if(y<8)y=r.bottom+10;
+  b.style.left=x+'px';b.style.top=y+'px'}
+function cacher(){if(cible)cible.removeAttribute('aria-describedby');cible=null;b.hidden=true}
+const trouver=e=>e.target.closest&&e.target.closest('#simu-index [data-g],#simu-index [data-tipx]');
+root.addEventListener('mouseover',e=>{const el=trouver(e);if(el&&el!==cible)montrer(el)});
+root.addEventListener('mouseout',e=>{const el=trouver(e);if(el&&!el.contains(e.relatedTarget))cacher()});
+root.addEventListener('focusin',e=>{const el=trouver(e);if(el)montrer(el)});
+root.addEventListener('focusout',cacher);
+root.addEventListener('click',e=>{const el=trouver(e);if(el&&el.classList.contains('tip')){e.preventDefault();cible===el?cacher():montrer(el)}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')cacher()});
+window.addEventListener('scroll',()=>{if(cible)montrer(cible)},{passive:true})}
+
+// ---------- Taux d'effort ----------
+const SEUILS_EFFORT=[{max:0.07,lib:'Confortable',cls:'ok'},{max:0.08,lib:'Normal',cls:'info'},{max:0.09,lib:'Élevé',cls:'warn'},{max:Infinity,lib:'Tendu',cls:'bad'}];
+function niveau(x){return SEUILS_EFFORT.find(s=>x<s.max)}
+function tauxEffort(d,R){if(!(d.ca>0))return null;const ch=d.charges||0,ratt=Math.max(R.exigible,0),L=[];
+L.push({k:'avant',lib:'Aujourd\'hui',sub:'loyer payé',v:(d.loyerPaye+ch)/d.ca,detail:euro(d.loyerPaye,true)+(ch?' + '+euro(ch,true)+' de charges':'')+' ÷ '+euro(d.ca)});
+L.push({k:'apres',lib:'Après indexation',sub:'loyer dû, chaque année',v:(R.loyerDu+ch)/d.ca,detail:euro(R.loyerDu,true)+(ch?' + '+euro(ch,true)+' de charges':'')+' ÷ '+euro(d.ca)});
+if(ratt>0.5){L.push({k:'annee',lib:'L\'année du rattrapage',sub:'payé en une fois',v:(R.loyerDu+ch+ratt)/d.ca,detail:euro(R.loyerDu,true)+' + '+euro(ratt,true)+' de rattrapage'+(ch?' + charges':'')+' ÷ '+euro(d.ca)});
+  L.push({k:'etale',lib:'Étalé sur 24 mois',sub:'rattrapage divisé par deux ans',v:(R.loyerDu+ch+ratt/2)/d.ca,detail:euro(R.loyerDu,true)+' + '+euro(ratt/2,true)+' par an'+(ch?' + charges':'')+' ÷ '+euro(d.ca)})}
+return L}
+function renderEffort(d,R){const bloc=document.getElementById('bloc-effort'),L=tauxEffort(d,R);if(!L){bloc.hidden=true;return}bloc.hidden=false;
+const echelle=Math.max(0.12,Math.ceil(Math.max(...L.map(x=>x.v))*100/2)*2/100);
+const pos=v=>(v/echelle*100).toFixed(2)+'%';
+let h='<div class="ef-scale" aria-hidden="true"><span></span><span class="ef-track">'+[0.07,0.09].map(t=>'<i style="left:'+pos(t)+'">'+fr(t*100,0)+NB+'%</i>').join('')+'</span><span></span></div>';
+h+=L.map(x=>{const n=niveau(x.v);return '<div class="ef-row" data-tipx="'+x.detail.replace(/"/g,'&quot;')+' = '+fr(x.v*100,1)+' %"><span class="ef-lib"><strong>'+x.lib+'</strong><span>'+x.sub+'</span></span><span class="ef-track">'+[0.07,0.08,0.09].map(t=>'<i class="ef-tick" style="left:'+pos(t)+'"></i>').join('')+'<b class="ef-bar ef-'+x.k+'" style="width:'+pos(x.v)+'"></b></span><span class="ef-val">'+fr(x.v*100,1)+NB+'%<span class="pill st-'+n.cls+'">'+n.lib+'</span></span></div>'}).join('');
+document.getElementById('effort').innerHTML=h;
+const av=L[0].v,ap=L[1].v;
+document.getElementById('effort-note').textContent='Le taux d\'effort passe de '+fr(av*100,1)+' % à '+fr(ap*100,1)+' % du chiffre d\'affaires'+(L[2]?', et monte à '+fr(L[2].v*100,1)+' % l\'année où le rattrapage est payé en une fois':'')+'. Repères du cabinet en restauration : moins de 7 % confortable, 7 à 8 % normal, 8 à 9 % élevé, au-delà de 9 % tendu. Survolez ou touchez une barre pour voir le calcul.'}
 
 // ---------- Contrôles juridiques ----------
 function controles(d,R){const a=[];
@@ -203,7 +257,7 @@ document.querySelectorAll('#simu-index input[name="jeu"]').forEach(i=>i.addEvent
 document.getElementById('simu-index').addEventListener('input',sauver);
 document.getElementById('simu-index').addEventListener('change',e=>{if(e.target.type==='radio'){document.querySelectorAll('#simu-index input[name="'+e.target.name+'"]').forEach(i=>i.closest('.radio-option').classList.toggle('selected',i.checked))}sauver()});
 document.querySelectorAll('#simu-index input[type=radio]:checked').forEach(i=>i.closest('.radio-option').classList.add('selected'));
-majSens();majPME();afficherRef();renderExemple();
+majSens();majPME();afficherRef();renderExemple();initBulles();
 document.getElementById('demande-group').hidden=radio('jeu')!=='demande'});
 
 function proposerRef(){const d=parseDate(document.getElementById('date_effet').value);if(!d)return;
@@ -215,7 +269,7 @@ function majSens(){const s=radio('sens'),al=document.getElementById('sens-alert'
 if(s==='hausse'){al.hidden=false;al.textContent='Cette stipulation est réputée non écrite. Le calcul appliquera l\'indice dans les deux sens et chiffrera ce que le preneur peut réclamer.'}else if(s==='forfait'){al.hidden=false;al.textContent='Une hausse fixe et automatique, sans plafond ni limite de durée, est réputée non écrite (Cass. civ. 3e, 3 septembre 2026, n° 25-14.904). Le calcul retiendra le loyer de référence et chiffrera la restitution due au preneur.'}else al.hidden=true}
 function majPME(){document.getElementById('pme-group').hidden=radio('indice')!=='ILC'}
 
-const CHAMPS=['date_effet','loyer_ref','ref_trim','ref_annee','tunnel_pct','forfait_pct','date_demande','loyer_paye','date_paye'];
+const CHAMPS=['date_effet','loyer_ref','ref_trim','ref_annee','tunnel_pct','forfait_pct','ca','charges','date_demande','loyer_paye','date_paye'];
 function sauver(){try{const o={t:Date.now()};CHAMPS.forEach(id=>o[id]=document.getElementById(id).value);
 ['indice','periode','sens','jeu','pme','terme'].forEach(n=>o[n]=radio(n));localStorage.setItem('simu_index',JSON.stringify(o))}catch(e){}}
 function charger(){try{const o=JSON.parse(localStorage.getItem('simu_index'));if(!o||Date.now()-o.t>7*86400000)return;
@@ -257,7 +311,7 @@ function lireDonnees(){return{dateEffet:parseDate(document.getElementById('date_
 refQ:qi(+document.getElementById('ref_annee').value,+document.getElementById('ref_trim').value),periode:+radio('periode'),
 sens:radio('sens')==='inconnu'?'symetrique':radio('sens'),sensInconnu:radio('sens')==='inconnu',tunnel:num('tunnel_pct'),forfait:num('forfait_pct'),jeu:radio('jeu')==='inconnu'?'auto':radio('jeu'),jeuInconnu:radio('jeu')==='inconnu',dateDemande:parseDate(document.getElementById('date_demande').value),
 pme:radio('indice')==='ILC'&&radio('pme')==='oui',loyerPaye:num('loyer_paye'),datePaye:parseDate(document.getElementById('date_paye').value),
-terme:+radio('terme'),dateCalc:parseDate(document.getElementById('date_calcul').value)||today()}}
+terme:+radio('terme'),ca:num('ca'),charges:num('charges'),dateCalc:parseDate(document.getElementById('date_calcul').value)||today()}}
 function lireContact(){return{profil_utilisateur:document.getElementById('profil_utilisateur').value,nom:document.getElementById('nom').value.trim(),
 prenom:document.getElementById('prenom').value.trim(),telephone:document.getElementById('telephone').value.trim(),email:document.getElementById('email').value.trim().toLowerCase()}}
 
@@ -267,12 +321,13 @@ sendLead(c,d,R);renderResults();btn.disabled=false}
 
 function renderResults(){const{d,c,R,A}=resultat;
 const ecartAn=R.loyerDu-d.loyerPaye;
-const sensLbl=R.exigible>=0?'Rattrapage exigible par le bailleur':'Trop-payé à restituer au preneur';
+const sensLbl=R.exigible>=0?tip('Rattrapage','rattrapage')+' exigible par le bailleur':'Trop-payé à restituer au preneur';
 document.getElementById('summary').innerHTML=
 '<div class="kpi"><div class="k-label">Loyer annuel dû au '+fmtDate(d.dateCalc)+'</div><div class="k-value">'+euro(R.loyerDu)+'</div><div class="k-sub">HT hors charges · '+pct(R.variationTotale)+' depuis le '+fmtDate(d.dateEffet)+'</div></div>'+
 '<div class="kpi"><div class="k-label">Écart avec le loyer payé</div><div class="k-value">'+(ecartAn>=0?'+':'−')+euro(Math.abs(ecartAn))+'</div><div class="k-sub">par an, sur la base de '+euro(d.loyerPaye)+' payés</div></div>'+
-'<div class="kpi hl"><div class="k-label">'+sensLbl+'</div><div class="k-value">'+euro(Math.abs(R.exigible))+'</div><div class="k-sub">échéances depuis le '+fmtDate(R.limite)+(R.prescrit>0.5?' · '+euro(R.prescrit)+' prescrits':'')+'</div></div>';
+'<div class="kpi hl"><div class="k-label">'+sensLbl+'</div><div class="k-value">'+euro(Math.abs(R.exigible))+'</div><div class="k-sub">échéances depuis le '+fmtDate(R.limite)+(R.prescrit>0.5?' · '+euro(R.prescrit)+' '+tip('prescrits','prescription'):'')+'</div></div>';
 document.getElementById('alerts').innerHTML=A.map(a=>'<div class="alert alert-'+(a.niv==='info'?'warning':a.niv)+'"><strong>'+a.t+'</strong>'+a.m+'</div>').join('');
+renderEffort(d,R);
 document.getElementById('chrono-resultat').innerHTML=friseCourte(d,R)+'<details class="detail"><summary>Voir le détail des calculs</summary>'+chronologie(d,R)+'</details>';
 const tb=document.querySelector('#table-index tbody');let h='<tr><td>'+fmtDate(d.dateEffet)+'</td><td>'+d.indice+' '+qLabel(d.refQ)+' · '+fr(idx(d.indice,d.refQ),d.indice==='ICC'?0:2)+'</td><td class="num">base</td><td class="num">'+euro(d.loyerRef,true)+'</td></tr>';
 R.ev.forEach(e=>{if(e.flags.includes('forfait')){h+='<tr><td>'+fmtDate(e.date)+'</td><td>Hausse forfaitaire écartée <span class="pill pill-cap">Réputée non écrite</span><br><span class="note">Clause appliquée : '+euro(e.loyerHausse,true)+'</span></td><td class="num">'+pct(0)+'</td><td class="num">'+euro(e.loyer,true)+'</td></tr>';return}const pills=e.flags.map(f=>' <span class="pill pill-cap">'+(f==='bouclier'?'Bouclier 3,5 %':'Tunnel')+'</span>').join('');
@@ -291,6 +346,7 @@ document.querySelectorAll('#simu-index .progress-step').forEach(p=>{p.classList.
 // ---------- Textes ----------
 function recapIndexations(d,R){if(d.sens==='forfait')return R.ev.map(e=>'- '+fmtLong(e.date)+' : hausse forfaitaire écartée, loyer dû '+euro(e.loyer,true)+' HT (la clause aurait porté le loyer à '+euro(e.loyerHausse,true)+' HT)').join('\n')||'- Aucune date anniversaire échue.';
 return R.ev.map(e=>'- '+fmtLong(e.date)+' : '+d.indice+' du '+qLabel(e.comp)+' ('+fr(e.valeur,d.indice==='ICC'?0:2)+'), '+pct(e.variation)+', loyer annuel '+euro(e.loyer,true)+' HT'+(e.flags.includes('bouclier')?' (plafonné à 3,5 %)':'')).join('\n')||'- Aucune date d\'indexation échue.'}
+function effortTexte(d,R){const L=tauxEffort(d,R);if(!L)return'';return '\n\nTaux d\'effort (loyer et charges ÷ chiffre d\'affaires HT) :\n'+L.map(x=>'- '+x.lib+' : '+fr(x.v*100,1)+' % ('+niveau(x.v).lib.toLowerCase()+')').join('\n')}
 function pointsControle(A){return A.length?A.map(a=>'⚠ '+a.t+' : '+a.m).join('\n'):'Aucun point d\'alerte sur les éléments renseignés.'}
 function genTexte(type){const{d,R,A}=resultat;const ref=d.indice+' du '+qLabel(d.refQ)+' ('+fr(idx(d.indice,d.refQ),d.indice==='ICC'?0:2)+')';
 const du=R.exigible>0.5,trop=R.exigible<-0.5;
@@ -298,7 +354,7 @@ const base='Loyer de référence : '+euro(d.loyerRef,true)+' HT par an au '+fmt
 if(type==='analyse_p')return 'INDEXATION DU LOYER - ANALYSE CÔTÉ PRENEUR\n\n'+base+'\n\n'+
 (du?'Le bailleur peut réclamer '+euro(R.exigible,true)+' au titre des échéances non prescrites, depuis le '+fmtLong(R.limite)+'.':trop?'Vous avez payé '+euro(-R.exigible,true)+' de trop sur les échéances non prescrites.':'Le loyer payé correspond au loyer indexé.')+
 (R.prescrit>0.5?'\n'+euro(R.prescrit,true)+' sont prescrits et ne peuvent plus être réclamés.':'')+
-'\n\nIndexations successives :\n'+recapIndexations(d,R)+'\n\nPoints de contrôle :\n'+pointsControle(A)+
+'\n\nIndexations successives :\n'+recapIndexations(d,R)+effortTexte(d,R)+'\n\nPoints de contrôle :\n'+pointsControle(A)+
 '\n\nAvant de répondre au bailleur :\n- Ne reconnaissez pas la dette par écrit tant que le calcul n\'est pas vérifié : une reconnaissance interrompt la prescription (article 2240 du code civil).\n- Demandez le détail du calcul, les indices retenus et la date de chaque indexation.\n- Vérifiez la rédaction exacte de la clause : sens de la variation, indice de base, jeu automatique ou sur demande.\n- Un commandement de payer visant la clause résolutoire laisse un mois pour régler (article L. 145-41 du code de commerce). Des délais de paiement peuvent être demandés au juge (article 1343-5 du code civil).\n\nPièces à réunir : le bail et ses avenants, les avis d\'échéance depuis le '+fmtLong(d.datePaye)+', les courriers du bailleur sur le loyer.';
 if(type==='courrier_p'){if(trop||d.sens==='hausse'||d.sens==='forfait')return 'Objet : Indexation du loyer - demande de régularisation\n\nMadame, Monsieur,\n\nJe suis titulaire du bail commercial portant sur les locaux que vous me louez, dont le loyer a été fixé à '+euro(d.loyerRef,true)+' HT par an à compter du '+fmtLong(d.dateEffet)+'.\n\n'+
 (d.sens==='forfait'?'Le bail prévoit une augmentation automatique du loyer de '+String(d.forfait).replace('.',',')+' % par an, sans plafond ni limite de durée. Une telle clause organise une révision du loyer à la seule hausse. Elle est réputée non écrite (Cass. civ. 3e, 3 septembre 2026, n° 25-14.904). Le loyer dû reste donc de '+euro(d.loyerRef,true)+' HT par an.\n\n':'')+
@@ -308,7 +364,7 @@ return 'Objet : Indexation du loyer - demande de décompte\n\nMadame, Monsieur,
 if(type==='analyse_b')return 'INDEXATION DU LOYER - ANALYSE CÔTÉ BAILLEUR\n\n'+base+'\n\n'+
 (du?'Rappel exigible : '+euro(R.exigible,true)+' HT, sur les échéances postérieures au '+fmtLong(R.limite)+'.':trop?'Attention : le loyer perçu dépasse le loyer indexé de '+euro(-R.exigible,true)+' sur cinq ans. Le preneur peut en demander la restitution.':'Le loyer perçu correspond au loyer indexé.')+
 (R.prescrit>0.5?'\nPrescrit : '+euro(R.prescrit,true)+'. Chaque échéance se prescrit par cinq ans (article 2224 du code civil) : chaque mois d\'attente fait perdre une échéance.':'')+
-'\n\nIndexations successives :\n'+recapIndexations(d,R)+'\n\nPoints de contrôle :\n'+pointsControle(A)+
+'\n\nIndexations successives :\n'+recapIndexations(d,R)+effortTexte(d,R)+'\n\nPoints de contrôle :\n'+pointsControle(A)+
 '\n\nPour sécuriser la demande :\n- Adressez-la par lettre recommandée avec avis de réception ou par commissaire de justice. La mise en demeure fait courir les intérêts au taux légal (article 1344-1 du code civil).\n- Seule une demande en justice, une mesure d\'exécution ou une reconnaissance du preneur interrompt la prescription (articles 2240 à 2244 du code civil). Un simple courrier ne l\'interrompt pas.\n- Joignez le détail des indices : un décompte vérifiable limite la contestation.\n- Un échéancier amiable évite souvent le contentieux.'+(d.sens==='hausse'?'\n- Votre clause ne joue qu\'à la hausse : elle est exposée. Ne réclamez pas plus que l\'application de l\'indice dans les deux sens.':'');
 if(d.sens==='forfait')return 'Aucun modèle de demande n\'est proposé.\n\nLa clause de hausse forfaitaire automatique est réputée non écrite (Cass. civ. 3e, 3 septembre 2026, n° 25-14.904). Réclamer une hausse sur ce fondement exposerait à une demande de restitution des sommes perçues depuis cinq ans.\n\nPour faire évoluer le loyer : révision triennale légale (article L. 145-38 du code de commerce) ou avenant instituant une clause d\'indexation sur l\'ILC, jouant à la hausse comme à la baisse.';
 return 'Objet : Application de la clause d\'indexation - rappel de loyers\n\nLettre recommandée avec avis de réception\n\nMadame, Monsieur,\n\nLe bail commercial qui nous lie stipule une indexation '+(d.periode===1?'annuelle':'triennale')+' du loyer sur l\''+NOM_INDICE[d.indice]+'. Le loyer a été fixé à '+euro(d.loyerRef,true)+' HT par an à compter du '+fmtLong(d.dateEffet)+', sur la base de l\'indice du '+qLabel(d.refQ)+'.\n\n'+
@@ -337,6 +393,6 @@ lines.forEach(l=>{if(y>282){doc.addPage();y=20}doc.text(l,20,y);y+=5.6});doc.sav
 let leadEnvoye=false;
 function sendLead(c,d,R){if(leadEnvoye)return;leadEnvoye=true;
 const corps={...c,simulateur:'indexation',loyer:d.loyerPaye,loyer_ref:d.loyerRef,date_effet:isoDate(d.dateEffet),indice:d.indice,indice_base:qKey(d.refQ),
-periode:d.periode,sens:d.sens,jeu:d.jeu,pme:d.pme,date_paye:isoDate(d.datePaye),loyer_du:R.loyerDu,rattrapage_exigible:R.exigible,montant_prescrit:R.prescrit};
+periode:d.periode,sens:d.sens,jeu:d.jeu,pme:d.pme,date_paye:isoDate(d.datePaye),loyer_du:R.loyerDu,ca:d.ca||null,charges:d.charges||null,rattrapage_exigible:R.exigible,montant_prescrit:R.prescrit};
 try{fetch(LEAD_ENDPOINT,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(corps),keepalive:true}).catch(()=>{})}catch(e){}}
 function resetSim(){try{localStorage.removeItem('simu_index')}catch(e){}location.reload()}

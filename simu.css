@@ -156,6 +156,35 @@
 #simu-index .rules li{display:grid;grid-template-columns:40px minmax(0,1fr);gap:var(--space-2);padding:var(--space-4) 0;border-bottom:1px solid var(--border)}
 #simu-index .numeral{font-size:15px;line-height:22px;font-weight:700;color:var(--accent)}
 #simu-index .rules p{color:var(--ink-secondary);font-size:15px;line-height:23px;max-width:65ch}
+/* Infobulles */
+#simu-index .tip{border-bottom:1px dotted currentColor;cursor:help;text-decoration:none}
+#simu-index .tip:focus-visible{outline:2px solid var(--accent-strong);outline-offset:2px}
+#si-bulle{position:fixed;z-index:9999;max-width:300px;padding:10px 12px;background:var(--ink);color:var(--surface-100);font-family:var(--sans);font-size:14px;line-height:20px;font-weight:400;letter-spacing:0;text-transform:none;pointer-events:none}
+#simu-index .lead-link{margin-top:var(--space-3)}
+#simu-index .lead-link a{color:var(--ink);font-weight:700;text-underline-offset:3px}
+#simu-index .help-top{margin:calc(-1*var(--space-3)) 0 var(--space-5)}
+
+/* Taux d'effort */
+#simu-index .effort{display:grid;gap:var(--space-2);font-variant-numeric:tabular-nums}
+#simu-index .ef-scale,#simu-index .ef-row{display:grid;grid-template-columns:190px minmax(0,1fr) 150px;gap:var(--space-4);align-items:center}
+#simu-index .ef-scale .ef-track{height:16px;background:none}
+#simu-index .ef-scale i{position:absolute;transform:translateX(-50%);font-style:normal;font-size:12px;color:var(--ink-secondary)}
+#simu-index .ef-row{padding:6px 0;border-bottom:1px solid var(--border);cursor:help}
+#simu-index .ef-row:hover .ef-lib strong{text-decoration:underline}
+#simu-index .ef-lib{display:flex;flex-direction:column;font-size:14px;line-height:18px}
+#simu-index .ef-lib span{color:var(--ink-secondary);font-size:13px}
+#simu-index .ef-track{position:relative;display:block;height:18px;background:var(--surface-000)}
+#simu-index .ef-tick{position:absolute;top:-3px;bottom:-3px;width:0;border-left:1px dashed var(--ink-muted)}
+#simu-index .ef-bar{position:absolute;left:0;top:3px;bottom:3px;background:var(--ink-secondary)}
+#simu-index .ef-bar.ef-apres{background:var(--ink)}
+#simu-index .ef-bar.ef-annee,#simu-index .ef-bar.ef-etale{background:var(--accent-strong)}
+#simu-index .ef-val{display:flex;gap:var(--space-2);align-items:center;justify-content:flex-end;font-weight:700}
+#simu-index .st-ok{background:var(--ok-soft);color:var(--ok)}
+#simu-index .st-info{background:var(--surface-000);color:var(--ink-secondary);border:1px solid var(--border)}
+#simu-index .st-warn{background:var(--warn-soft);color:var(--warn)}
+#simu-index .st-bad{background:var(--bad-soft);color:var(--bad)}
+@media (max-width:640px){#simu-index .ef-scale,#simu-index .ef-row{grid-template-columns:1fr auto}#simu-index .ef-row .ef-track,#simu-index .ef-scale .ef-track{grid-column:1/-1;grid-row:2}#simu-index .ef-scale span:first-child,#simu-index .ef-scale span:last-child{display:none}}
+
 /* Frise courte */
 #simu-index .frise{list-style:none;margin-top:var(--space-4);border-top:1px solid var(--ink);font-variant-numeric:tabular-nums}
 #simu-index .f-row{display:grid;grid-template-columns:170px minmax(0,1fr) auto;gap:var(--space-1) var(--space-4);align-items:baseline;padding:10px 0;border-bottom:1px solid var(--border)}
