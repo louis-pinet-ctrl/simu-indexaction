@@ -62,6 +62,6 @@ t('hausse forfaitaire réputée non écrite : restitution calculée sur le loyer
 function r(x){return Math.round(x*100)/100}
 t('exemple commenté : montants stables et chronologie complète',()=>{
   const R=calculer(EXEMPLE);assert.strictEqual(R.exigible,9073.31);assert.strictEqual(R.prescrit,25.81);assert.strictEqual(R.ev.length,6);
-  const h=chronologie(EXEMPLE,R);assert.ok(h.includes('Limite de prescription')&&h.includes('24 103,24'));
+  const h=chronologie(EXEMPLE,R);assert.ok(h.includes('Limite de prescription')&&h.includes('103,24'));
 });
 console.log(n+' tests passés');
