@@ -43,4 +43,13 @@ t('loyer payé égal au loyer dû : écart nul',()=>{
   const d={...base,dateEffet:parseDate('2025-01-01'),loyerRef:20000,refQ:qi(2024,3),dateCalc:parseDate('2025-12-31'),loyerPaye:20000,datePaye:parseDate('2025-01-01')};
   assert.ok(Math.abs(calculer(d).exigible)<0.01);
 });
+
+t('mensualités : douze échéances égales au douzième du loyer',()=>{
+  const d={...base,dateEffet:parseDate('2025-01-01'),loyerRef:24000,refQ:qi(2024,3),dateCalc:parseDate('2025-12-31'),loyerPaye:24000,datePaye:parseDate('2025-01-01')};
+  const R=calculer(d);const l=R.annees.find(a=>a.annee===2025);assert.ok(Math.abs(l.paye-24000)<0.01,'payé '+l.paye);
+});
+t('clause à la hausse seule : le trop-payé du locataire apparaît quand l\'indice baisse',()=>{
+  const d={...base,sens:'hausse',dateEffet:parseDate('2024-07-01'),loyerRef:30000,refQ:qi(2024,3),dateCalc:parseDate('2026-09-28'),loyerPaye:30000,datePaye:parseDate('2024-07-01')};
+  const R=calculer(d);assert.ok(R.loyerDu<30000);assert.ok(R.exigible<0);
+});
 console.log(n+' tests passés');
