@@ -77,4 +77,12 @@ t('ampleur : exemple qualifié de forte augmentation',()=>{
   assert.ok(Math.abs(A.h-(26813.02/24000-1))<1e-9);
   assert.ok(Math.abs(A.mois-9073.31/(26813.02/12))<1e-9);
 });
+t('prise d\'effet en cours de mois : prorata et rendus sans erreur',()=>{
+  const d={...EXEMPLE,dateEffet:parseDate('2020-07-15'),datePaye:parseDate('2020-07-15')};const R=calculer(d);
+  const premiere=R.detail[0];assert.ok(premiere.du<24000/12&&premiere.du>0,'prorata '+premiere.du);
+  const h=ctx.friseCourte(d,R)+ctx.calculsTypes(d,R)+chronologie(d,R);assert.ok(h.includes('prorata')||h.includes('/12'));
+});
+t('valeurs lues invraisemblables : aucune case cochée',()=>{
+  assert.strictEqual(ctx.cocher('sens','x"]'),false);
+});
 console.log(n+' tests passés');

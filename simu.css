@@ -186,7 +186,7 @@
 /* Infobulles */
 #simu-index .tip{border-bottom:1px dotted currentColor;cursor:help;text-decoration:none}
 #simu-index .tip:focus-visible{outline:2px solid var(--accent-strong);outline-offset:2px}
-#si-bulle{position:fixed;z-index:9999;max-width:300px;padding:10px 12px;background:var(--ink);color:var(--surface-100);font-family:var(--sans);font-size:14px;line-height:20px;font-weight:400;letter-spacing:0;text-transform:none;pointer-events:none}
+#si-bulle{position:fixed;z-index:2147483000;max-width:300px;padding:10px 12px;background:#111111;color:#f6f5f2;font-family:'Nunito',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;line-height:20px;font-weight:400;letter-spacing:0;text-transform:none;text-align:left;pointer-events:none;box-sizing:border-box}
 #simu-index .lead-link{margin-top:var(--space-3)}
 #simu-index .lead-link a{color:var(--ink);font-weight:700;text-underline-offset:3px}
 #simu-index .help-top{margin:calc(-1*var(--space-3)) 0 var(--space-5)}

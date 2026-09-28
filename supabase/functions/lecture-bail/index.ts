@@ -1,4 +1,4 @@
-// Fonction Edge « lecture-bail » v2
+// Fonction Edge « lecture-bail » v3
 // Lit un bail commercial (PDF ou photos) avec l'API Claude et renvoie les données
 // utiles au simulateur d'indexation, avec l'extrait du bail qui justifie chaque valeur.
 //
@@ -24,6 +24,8 @@ const LIMITE_PAR_HEURE = 5; // lectures par adresse IP et par heure, par instanc
 // Client créé à la première lecture : sans clé, la fonction répond proprement au lieu de planter.
 let client: Anthropic | null = null;
 const BUCKET = "baux-deposes";
+// Version du texte de consentement : stockée avec le texte reçu, pour dater la formulation acceptée.
+const CONSENT_VERSION = "v1-2026-09-28";
 const base = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
 
 function nomSur(nom: unknown, i: number, type: string): string {
@@ -173,7 +175,14 @@ Deno.serve(async (req: Request) => {
     const d = new Date(), prefixe = `${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, "0")}/${dossier}`;
     const lignes = [];
     for (let i = 0; i < fichiers.length; i++) {
-      const f = fichiers[i], chemin = `${prefixe}/${nomSur(f.nom, i, f.type!)}`, bytes = octetsDe(f.data!);
+      const f = fichiers[i], chemin = `${prefixe}/${nomSur(f.nom, i, f.type!)}`;
+      let bytes: Uint8Array;
+      try {
+        bytes = octetsDe(f.data!);
+      } catch {
+        if (lignes.length) await base.storage.from(BUCKET).remove(lignes.map((l) => l.fichier_chemin));
+        return repondre(400, { erreur: "Ce fichier n'a pas pu être lu. Vérifiez qu'il s'agit d'un PDF ou d'une photo lisible." });
+      }
       const { error } = await base.storage.from(BUCKET).upload(chemin, bytes, { contentType: f.type!, upsert: false });
       if (error) {
         console.error("lecture-bail stockage", error.message);
@@ -182,7 +191,7 @@ Deno.serve(async (req: Request) => {
         break;
       }
       lignes.push({ dossier, fichier_chemin: chemin, fichier_nom: typeof f.nom === "string" ? f.nom.slice(0, 200) : null,
-        fichier_type: f.type, fichier_octets: bytes.length, consentement_texte: corps.conservation_texte.slice(0, 1000) });
+        fichier_type: f.type, fichier_octets: bytes.length, consentement_texte: `[${CONSENT_VERSION}] ` + corps.conservation_texte.slice(0, 1000) });
     }
     if (dossier) {
       const { error } = await base.from("baux_deposes").insert(lignes);

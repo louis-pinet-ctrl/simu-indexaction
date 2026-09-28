@@ -26,7 +26,7 @@ Chaque trimestre, l'INSEE publie ILC, ILAT et ICC (fin mars, fin juin, fin septe
 - Clause tunnel symétrique sur l'ILC : art. L.145-38-1 C. com. (loi n° 2026-403 du 26 mai 2026, en vigueur le 28/05/2026).
 - Bouclier ILC 3,5 % pour les PME, T2 2022 à T1 2024, définitivement acquis : loi n° 2022-1158, art. 14.
 - Rattrapage : prescription quinquennale par échéance (art. 2224 C. civ.).
-- Restitution au locataire : action en réputé non écrit imprescriptible, restitution sur 5 ans calculée sur le loyer non indexé (Cass. 3e civ., 23 janv. 2025, n° 23-18.643).
+- Restitution au preneur : action en réputé non écrit imprescriptible, restitution sur 5 ans calculée sur le loyer non indexé (Cass. 3e civ., 23 janv. 2025, n° 23-18.643).
 - Révision : art. L.145-38 (triennale) et L.145-39 (variation de plus d'un quart, lissage 10 %).
 
 ## Lead
@@ -35,7 +35,7 @@ Chaque trimestre, l'INSEE publie ILC, ILAT et ICC (fin mars, fin juin, fin septe
 
 ## Lecture automatique du bail
 
-- Fonction Edge Supabase `lecture-bail` v2 (source : `supabase/functions/lecture-bail/index.ts`), déployée le 28/09/2026, `verify_jwt` activé : le navigateur envoie la clé publique `anon`.
+- Fonction Edge Supabase `lecture-bail` v3 (source : `supabase/functions/lecture-bail/index.ts`), déployée le 28/09/2026, `verify_jwt` activé : le navigateur envoie la clé publique `anon` (JWT hérité). Si les clés héritées sont désactivées dans Supabase, la lecture s'arrête : passer alors `verify_jwt` à false, la fonction contrôlant déjà l'origine, ou envoyer un autre JWT.
 - Modèle `claude-opus-5-5`, sortie JSON contrainte par schéma, repli automatique `fallbacks: "default"` en cas de refus.
 - Secret à créer dans Supabase : `ANTHROPIC_API_KEY`. Sans lui, la fonction répond 503 et le simulateur invite à remplir à la main.
 - Garde-fous : origines autorisées (site et GitHub Pages), 3 fichiers et 10 Mo au plus, 5 lectures par IP et par heure, consentement obligatoire, contenu jamais journalisé.
@@ -43,5 +43,6 @@ Chaque trimestre, l'INSEE publie ILC, ILAT et ICC (fin mars, fin juin, fin septe
 - Rattachement : le lead porte `payload.bail_dossier` ; le déclencheur `trg_rattacher_bail_au_lead` remplit `lead_id` et `email`. Vue de travail : `v_baux_deposes`.
 - Purge : à chaque appel, la fonction supprime les baux échus (50 au plus), sauf `conserver_client = true` (à cocher quand le visiteur devient client).
 - Demande de suppression : supprimer le fichier dans Storage puis la ligne dans `baux_deposes`.
+- Limites connues : limitation par IP mémorisée par instance (non partagée), durée d'exécution des fonctions Edge (un bail scanné de 100 pages peut dépasser le délai), taille de requête (10 Mo de fichiers, soit 13,4 Mo en base64).
 - Chaque valeur renvoyée porte l'extrait du bail et sa page ; le visiteur valide ou corrige avant de poursuivre.
 - RGPD : mentionner ce traitement (sous-traitant Anthropic) dans la politique de confidentialité du site et le registre des traitements.
