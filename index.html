@@ -48,7 +48,8 @@
 <input type="file" id="bail_fichiers" accept="application/pdf,image/jpeg,image/png,image/webp" multiple class="visually-hidden">
 <span class="depot-noms" id="depot-noms">Aucun fichier choisi · 3 fichiers et 10&nbsp;Mo au plus</span>
 </div>
-<label class="depot-consent"><input type="checkbox" id="bail_consent"><span>J'accepte que le bail soit transmis au prestataire d'intelligence artificielle du cabinet (Anthropic) pour être lu. Le cabinet ne conserve pas le fichier. Seules les informations extraites s'affichent dans mon navigateur. Je peux masquer les noms des parties avant l'envoi.</span></label>
+<label class="depot-consent"><input type="checkbox" id="bail_consent"><span>J'accepte que mon bail soit transmis au prestataire d'intelligence artificielle du cabinet (Anthropic) pour être lu. Les informations extraites s'affichent dans mon navigateur. Je peux masquer les noms des parties avant l'envoi.</span></label>
+<label class="depot-consent"><input type="checkbox" id="bail_conserver"><span><strong>Facultatif.</strong> J'accepte que le cabinet Louis Pinet conserve mon bail pendant 12 mois, pour étudier mon dossier et me recontacter. Je peux demander sa suppression à tout moment par la <a href="https://www.louispinetavocat.fr/contactez-moi" target="_blank" rel="noopener">page contact</a>. Sans cette case, le bail n'est pas conservé.</span></label>
 <button type="button" class="btn-primary depot-lire" id="btn-lire" onclick="lireBail()" disabled>Lire mon bail</button>
 <p class="depot-etat" id="depot-etat" role="status" aria-live="polite"></p>
 </div>

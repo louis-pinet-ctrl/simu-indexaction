@@ -35,9 +35,13 @@ Chaque trimestre, l'INSEE publie ILC, ILAT et ICC (fin mars, fin juin, fin septe
 
 ## Lecture automatique du bail
 
-- Fonction Edge Supabase `lecture-bail` (source : `supabase/functions/lecture-bail/index.ts`), déployée le 28/09/2026, `verify_jwt` activé : le navigateur envoie la clé publique `anon`.
+- Fonction Edge Supabase `lecture-bail` v2 (source : `supabase/functions/lecture-bail/index.ts`), déployée le 28/09/2026, `verify_jwt` activé : le navigateur envoie la clé publique `anon`.
 - Modèle `claude-opus-5-5`, sortie JSON contrainte par schéma, repli automatique `fallbacks: "default"` en cas de refus.
 - Secret à créer dans Supabase : `ANTHROPIC_API_KEY`. Sans lui, la fonction répond 503 et le simulateur invite à remplir à la main.
-- Garde-fous : origines autorisées (site et GitHub Pages), 3 fichiers et 10 Mo au plus, 5 lectures par IP et par heure, consentement obligatoire, aucun stockage ni journalisation du contenu.
+- Garde-fous : origines autorisées (site et GitHub Pages), 3 fichiers et 10 Mo au plus, 5 lectures par IP et par heure, consentement obligatoire, contenu jamais journalisé.
+- Conservation (case facultative distincte) : fichiers dans l'espace privé `baux-deposes` (`AAAA/MM/<dossier>/`), une ligne par fichier dans `baux_deposes` avec le texte du consentement, l'extraction et `supprimer_apres` = +12 mois. Migration : `supabase/migrations/20260928_baux_deposes.sql`.
+- Rattachement : le lead porte `payload.bail_dossier` ; le déclencheur `trg_rattacher_bail_au_lead` remplit `lead_id` et `email`. Vue de travail : `v_baux_deposes`.
+- Purge : à chaque appel, la fonction supprime les baux échus (50 au plus), sauf `conserver_client = true` (à cocher quand le visiteur devient client).
+- Demande de suppression : supprimer le fichier dans Storage puis la ligne dans `baux_deposes`.
 - Chaque valeur renvoyée porte l'extrait du bail et sa page ; le visiteur valide ou corrige avant de poursuivre.
 - RGPD : mentionner ce traitement (sous-traitant Anthropic) dans la politique de confidentialité du site et le registre des traitements.

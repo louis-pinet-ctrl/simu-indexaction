@@ -1,13 +1,15 @@
-// Fonction Edge « lecture-bail » v1
+// Fonction Edge « lecture-bail » v2
 // Lit un bail commercial (PDF ou photos) avec l'API Claude et renvoie les données
 // utiles au simulateur d'indexation, avec l'extrait du bail qui justifie chaque valeur.
 //
-// Confidentialité : le fichier n'est ni stocké, ni journalisé. Seuls la taille,
-// le nombre de fichiers et l'issue de la lecture sont journalisés.
+// Confidentialité : le contenu n'est jamais journalisé. Le fichier n'est conservé que si le
+// visiteur coche la case de conservation : il est alors rangé dans l'espace privé
+// « baux-deposes » et tracé dans la table baux_deposes (12 mois, purge automatique).
 // Secret requis : ANTHROPIC_API_KEY.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import Anthropic from "npm:@anthropic-ai/sdk@0.129.0";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const ORIGINES_AUTORISEES = [
   "https://www.louispinetavocat.fr",
@@ -21,6 +23,33 @@ const LIMITE_PAR_HEURE = 5; // lectures par adresse IP et par heure, par instanc
 
 // Client créé à la première lecture : sans clé, la fonction répond proprement au lieu de planter.
 let client: Anthropic | null = null;
+const BUCKET = "baux-deposes";
+const base = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+
+function nomSur(nom: unknown, i: number, type: string): string {
+  const ext = type === "application/pdf" ? "pdf" : type.split("/")[1];
+  const brut = typeof nom === "string" ? nom : "";
+  const propre = brut.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\.[a-z0-9]+$/i, "")
+    .replace(/[^A-Za-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "bail";
+  return `${i + 1}-${propre}.${ext}`;
+}
+function octetsDe(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+// Purge des baux arrivés à échéance, sauf ceux marqués conserver_client. Tourne après la réponse.
+async function purger() {
+  const { data } = await base.from("baux_deposes").select("id, fichier_chemin")
+    .lt("supprimer_apres", new Date().toISOString()).eq("conserver_client", false).limit(50);
+  if (!data?.length) return;
+  const { error } = await base.storage.from(BUCKET).remove(data.map((r) => r.fichier_chemin));
+  if (error) { console.error("lecture-bail purge stockage", error.message); return; }
+  await base.from("baux_deposes").delete().in("id", data.map((r) => r.id));
+  console.log("lecture-bail purge", data.length);
+}
 
 function entetes(origine: string | null) {
   const o = origine && ORIGINES_AUTORISEES.includes(origine) ? origine : ORIGINES_AUTORISEES[0];
@@ -111,7 +140,7 @@ Deno.serve(async (req: Request) => {
   const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "inconnue";
   if (tropDeLectures(ip)) return repondre(429, { erreur: "Trop de lectures en une heure. Réessayez plus tard ou remplissez les cases à la main." });
 
-  let corps: { fichiers?: Array<{ type?: string; data?: string }>; consentement?: boolean };
+  let corps: { fichiers?: Array<{ type?: string; data?: string; nom?: string }>; consentement?: boolean; conserver?: boolean; conservation_texte?: string };
   try {
     corps = await req.json();
   } catch {
@@ -137,9 +166,39 @@ Deno.serve(async (req: Request) => {
   if (octets > MAX_OCTETS) return repondre(413, { erreur: "Fichiers trop lourds : 10 Mo au total au maximum." });
   blocs.push({ type: "text", text: "Voici le bail et, le cas échéant, ses avenants. Extrais les données demandées." });
 
+  // Conservation, uniquement avec l'accord exprès du visiteur.
+  let dossier: string | null = null;
+  if (corps.conserver === true && typeof corps.conservation_texte === "string" && corps.conservation_texte.trim()) {
+    dossier = crypto.randomUUID();
+    const d = new Date(), prefixe = `${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, "0")}/${dossier}`;
+    const lignes = [];
+    for (let i = 0; i < fichiers.length; i++) {
+      const f = fichiers[i], chemin = `${prefixe}/${nomSur(f.nom, i, f.type!)}`, bytes = octetsDe(f.data!);
+      const { error } = await base.storage.from(BUCKET).upload(chemin, bytes, { contentType: f.type!, upsert: false });
+      if (error) {
+        console.error("lecture-bail stockage", error.message);
+        if (lignes.length) await base.storage.from(BUCKET).remove(lignes.map((l) => l.fichier_chemin));
+        dossier = null;
+        break;
+      }
+      lignes.push({ dossier, fichier_chemin: chemin, fichier_nom: typeof f.nom === "string" ? f.nom.slice(0, 200) : null,
+        fichier_type: f.type, fichier_octets: bytes.length, consentement_texte: corps.conservation_texte.slice(0, 1000) });
+    }
+    if (dossier) {
+      const { error } = await base.from("baux_deposes").insert(lignes);
+      if (error) {
+        console.error("lecture-bail table", error.message);
+        await base.storage.from(BUCKET).remove(lignes.map((l) => l.fichier_chemin));
+        dossier = null;
+      }
+    }
+  }
+  // @ts-ignore EdgeRuntime est fourni par le runtime Supabase
+  if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(purger().catch(() => {}));
+
   if (!Deno.env.get("ANTHROPIC_API_KEY")) {
     console.error("lecture-bail : secret ANTHROPIC_API_KEY absent");
-    return repondre(503, { erreur: "La lecture automatique est momentanément indisponible. Remplissez les cases à la main." });
+    return repondre(503, { erreur: "La lecture automatique est momentanément indisponible. Remplissez les cases à la main.", dossier });
   }
   client ??= new Anthropic();
 
@@ -155,28 +214,29 @@ Deno.serve(async (req: Request) => {
     });
     if (reponse.stop_reason === "refusal") {
       console.log("lecture-bail refus", fichiers.length, octets);
-      return repondre(422, { erreur: "Ce document n'a pas pu être lu. Remplissez les cases à la main." });
+      return repondre(422, { erreur: "Ce document n'a pas pu être lu. Remplissez les cases à la main.", dossier });
     }
     if (reponse.stop_reason === "max_tokens") {
       console.log("lecture-bail tronque", fichiers.length, octets);
-      return repondre(502, { erreur: "La lecture n'a pas abouti. Réessayez avec le seul bail, sans annexes." });
+      return repondre(502, { erreur: "La lecture n'a pas abouti. Réessayez avec le seul bail, sans annexes.", dossier });
     }
     const texte = reponse.content.find((b) => b.type === "text");
     const donnees = texte && "text" in texte ? JSON.parse(texte.text) : null;
-    if (!donnees) return repondre(502, { erreur: "La lecture n'a pas abouti. Remplissez les cases à la main." });
-    console.log("lecture-bail ok", fichiers.length, octets);
-    return repondre(200, { ok: true, donnees });
+    if (!donnees) return repondre(502, { erreur: "La lecture n'a pas abouti. Remplissez les cases à la main.", dossier });
+    if (dossier) await base.from("baux_deposes").update({ extraction: donnees }).eq("dossier", dossier);
+    console.log("lecture-bail ok", fichiers.length, octets, dossier ? "conserve" : "non conserve");
+    return repondre(200, { ok: true, donnees, dossier });
   } catch (e) {
-    if (e instanceof Anthropic.RateLimitError) return repondre(503, { erreur: "Service de lecture saturé. Réessayez dans une minute." });
+    if (e instanceof Anthropic.RateLimitError) return repondre(503, { erreur: "Service de lecture saturé. Réessayez dans une minute.", dossier });
     if (e instanceof Anthropic.AuthenticationError) {
       console.error("lecture-bail : ANTHROPIC_API_KEY absente ou invalide");
-      return repondre(503, { erreur: "La lecture automatique est momentanément indisponible." });
+      return repondre(503, { erreur: "La lecture automatique est momentanément indisponible.", dossier });
     }
     if (e instanceof Anthropic.BadRequestError) {
       console.error("lecture-bail requête refusée", e.message);
-      return repondre(400, { erreur: "Ce fichier n'a pas pu être lu. Vérifiez qu'il s'agit d'un PDF ou d'une photo lisible." });
+      return repondre(400, { erreur: "Ce fichier n'a pas pu être lu. Vérifiez qu'il s'agit d'un PDF ou d'une photo lisible.", dossier });
     }
     console.error("lecture-bail erreur", e instanceof Error ? e.message : String(e));
-    return repondre(502, { erreur: "La lecture n'a pas abouti. Remplissez les cases à la main." });
+    return repondre(502, { erreur: "La lecture n'a pas abouti. Remplissez les cases à la main.", dossier });
   }
 });

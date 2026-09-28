@@ -244,7 +244,7 @@ const LECTURE_ENDPOINT='https://tcnzmfcmihwzoaaffgfz.supabase.co/functions/v1/le
 // Clé publique Supabase (rôle anon), faite pour être exposée côté navigateur : la fonction vérifie ce jeton.
 const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjbnptZmNtaWh3em9hYWZmZ2Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NDM4ODEsImV4cCI6MjA5MTExOTg4MX0.n_FqRrWFP7Y7hlfDUBkiBNHB_vE7L19IlRKB5tHw2JI';
 const LECTURE_MAX_FICHIERS=3,LECTURE_MAX_OCTETS=10*1024*1024;
-let bailLu=false;
+let bailLu=false,bailDossier=null;
 function initDepot(){const inp=document.getElementById('bail_fichiers'),ok=document.getElementById('bail_consent'),btn=document.getElementById('btn-lire');if(!inp)return;
 const maj=()=>{const f=[...inp.files];document.getElementById('depot-noms').textContent=f.length?f.map(x=>x.name).join(', '):'Aucun fichier choisi · 3 fichiers et 10'+NB+'Mo au plus';btn.disabled=!(f.length&&ok.checked)};
 inp.addEventListener('change',maj);ok.addEventListener('change',maj)}
@@ -256,12 +256,14 @@ if(!f.length||f.length>LECTURE_MAX_FICHIERS)return etatDepot('Déposez entre 1 e
 if(f.some(x=>!['application/pdf','image/jpeg','image/png','image/webp'].includes(x.type)))return etatDepot('Formats acceptés'+NB+': PDF, JPEG, PNG ou WebP.','err');
 if(f.reduce((a,x)=>a+x.size,0)>LECTURE_MAX_OCTETS)return etatDepot('Fichiers trop lourds'+NB+': 10'+NB+'Mo au total au maximum. Déposez le bail sans ses annexes.','err');
 btn.disabled=true;etatDepot('Lecture en cours. Cela prend en général 20 à 60 secondes.','wait');
-try{const fichiers=await Promise.all(f.map(async x=>({type:x.type,data:await lireFichier(x)})));
-  const r=await fetch(LECTURE_ENDPOINT,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+SUPABASE_ANON,apikey:SUPABASE_ANON},body:JSON.stringify({fichiers,consentement:true})});
+try{const fichiers=await Promise.all(f.map(async x=>({type:x.type,nom:x.name,data:await lireFichier(x)})));
+  const garde=document.getElementById('bail_conserver'),conserver=!!(garde&&garde.checked);
+  const r=await fetch(LECTURE_ENDPOINT,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+SUPABASE_ANON,apikey:SUPABASE_ANON},body:JSON.stringify({fichiers,consentement:true,conserver,conservation_texte:conserver?garde.closest('label').textContent.trim():''})});
   const j=await r.json().catch(()=>({}));
+  if(j.dossier)bailDossier=j.dossier;
   if(!r.ok||!j.donnees)throw new Error(j.erreur||'La lecture n\'a pas abouti. Remplissez les cases à la main.');
-  appliquerLecture(j.donnees);bailLu=true;etatDepot('Lecture terminée. Vérifiez les réponses ci-dessous, puis les cases pré-remplies.','ok')}
-catch(e){etatDepot((e&&e.message&&!/fetch|network/i.test(e.message))?e.message:'La lecture automatique est indisponible pour le moment. Remplissez les cases à la main.','err')}
+  appliquerLecture(j.donnees);bailLu=true;etatDepot('Lecture terminée. Vérifiez les réponses ci-dessous, puis les cases pré-remplies.'+(bailDossier?' Votre bail a été transmis au cabinet.':''),'ok')}
+catch(e){etatDepot(((e&&e.message&&!/fetch|network/i.test(e.message))?e.message:'La lecture automatique est indisponible pour le moment. Remplissez les cases à la main.')+(bailDossier?' Votre bail a bien été transmis au cabinet.':''),'err')}
 finally{btn.disabled=false}}
 function cocher(name,val){const el=document.querySelector('#simu-index input[name="'+name+'"][value="'+val+'"]');if(el){el.checked=true;el.dispatchEvent(new Event('change',{bubbles:true}))}return!!el}
 function badge(id){const el=document.getElementById(id)||document.querySelector('#simu-index input[name="'+id+'"]');const g=el&&el.closest('.form-group');if(!g)return;const l=g.querySelector('label');if(l&&!l.querySelector('.badge-lu'))l.insertAdjacentHTML('beforeend',' <span class="badge-lu">Lu dans le bail</span>')}
@@ -465,6 +467,6 @@ lines.forEach(l=>{if(y>282){doc.addPage();y=20}doc.text(l,20,y);y+=5.6});doc.sav
 let leadEnvoye=false;
 function sendLead(c,d,R){if(leadEnvoye)return;leadEnvoye=true;
 const corps={...c,simulateur:'indexation',loyer:d.loyerPaye,loyer_ref:d.loyerRef,date_effet:isoDate(d.dateEffet),indice:d.indice,indice_base:qKey(d.refQ),
-periode:d.periode,sens:d.sens,jeu:d.jeu,pme:d.pme,date_paye:isoDate(d.datePaye),loyer_du:R.loyerDu,bail_lu:bailLu,ca:d.ca||null,charges:d.charges||null,rattrapage_exigible:R.exigible,montant_prescrit:R.prescrit};
+periode:d.periode,sens:d.sens,jeu:d.jeu,pme:d.pme,date_paye:isoDate(d.datePaye),loyer_du:R.loyerDu,bail_lu:bailLu,bail_dossier:bailDossier,ca:d.ca||null,charges:d.charges||null,rattrapage_exigible:R.exigible,montant_prescrit:R.prescrit};
 try{fetch(LEAD_ENDPOINT,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(corps),keepalive:true}).catch(()=>{})}catch(e){}}
 function resetSim(){try{localStorage.removeItem('simu_index')}catch(e){}location.reload()}
