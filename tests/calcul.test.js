@@ -3,7 +3,7 @@ const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('ass
 const ctx={window:{},document:{addEventListener(){},createElement(){return{}},head:{appendChild(){}}},console,Intl,Date,Math,JSON,Promise,setTimeout,clearTimeout};
 ctx.window=ctx;vm.createContext(ctx);
 for(const f of['indices.js','simu.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'..',f),'utf8'),ctx);
-const{calculer,qi,parseDate,idx}=ctx;
+const{calculer,qi,parseDate,idx,chronologie}=ctx;const EXEMPLE=vm.runInContext('EXEMPLE',ctx);
 const base={indice:'ILC',periode:1,sens:'symetrique',tunnel:0,jeu:'auto',dateDemande:null,pme:false,terme:1};
 let n=0;function t(nom,fn){fn();n++;console.log('ok',nom)}
 
@@ -11,7 +11,8 @@ t('sans plafond, le loyer suit exactement le rapport des indices',()=>{
   const d={...base,dateEffet:parseDate('2016-01-01'),loyerRef:30000,refQ:qi(2015,3),loyerPaye:30000,datePaye:parseDate('2016-01-01'),dateCalc:parseDate('2026-09-28')};
   const R=calculer(d);const last=R.ev[R.ev.length-1];
   assert.strictEqual(R.ev.length,10);
-  assert.ok(Math.abs(last.loyer-Math.round(30000*idx('ILC',qi(2025,3))/idx('ILC',qi(2015,3))*100)/100)<0.011);
+  assert.ok(Math.abs(last.loyer-30000*idx('ILC',qi(2025,3))/idx('ILC',qi(2015,3)))<0.10,'écart '+last.loyer);
+  R.ev.forEach(e=>assert.strictEqual(e.loyer,Math.round(e.prec*e.ratio*100)/100));
 });
 
 t('bouclier PME : aucune variation annuelle retenue au-delà de 3,5 % sur la période',()=>{
@@ -59,4 +60,8 @@ t('hausse forfaitaire réputée non écrite : restitution calculée sur le loyer
   assert.ok(Math.abs(R.exigible)>5000&&Math.abs(R.exigible)<9000,'trop-payé '+R.exigible);
 });
 function r(x){return Math.round(x*100)/100}
+t('exemple commenté : montants stables et chronologie complète',()=>{
+  const R=calculer(EXEMPLE);assert.strictEqual(R.exigible,9073.31);assert.strictEqual(R.prescrit,25.81);assert.strictEqual(R.ev.length,6);
+  const h=chronologie(EXEMPLE,R);assert.ok(h.includes('Limite de prescription')&&h.includes('24 103,24'));
+});
 console.log(n+' tests passés');

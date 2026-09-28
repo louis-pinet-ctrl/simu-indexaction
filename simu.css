@@ -156,6 +156,32 @@
 #simu-index .rules li{display:grid;grid-template-columns:40px minmax(0,1fr);gap:var(--space-2);padding:var(--space-4) 0;border-bottom:1px solid var(--border)}
 #simu-index .numeral{font-size:15px;line-height:22px;font-weight:700;color:var(--accent)}
 #simu-index .rules p{color:var(--ink-secondary);font-size:15px;line-height:23px;max-width:65ch}
+/* Chronologie */
+#simu-index .chrono{list-style:none;margin-top:var(--space-4);font-variant-numeric:tabular-nums}
+#simu-index .c-node{position:relative;padding:0 0 var(--space-5) 30px}
+#simu-index .c-node::before{content:"";position:absolute;left:5px;top:8px;bottom:-8px;width:1px;background:var(--ink-muted)}
+#simu-index .c-node::after{content:"";position:absolute;left:0;top:5px;width:11px;height:11px;background:var(--surface-100);border:2px solid var(--ink)}
+#simu-index .c-node.start::after,#simu-index .c-node.end::after{background:var(--ink)}
+#simu-index .c-node.end::before{display:none}
+#simu-index .c-node.limit{padding-top:var(--space-3);margin-top:calc(-1*var(--space-2))}
+#simu-index .c-node.limit::after{top:17px;border-color:var(--warn);background:var(--warn-soft);transform:rotate(45deg)}
+#simu-index .c-node.limit .c-title,#simu-index .c-node.limit .c-date{color:var(--warn)}
+#simu-index .c-date{font-size:12px;line-height:16px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-secondary)}
+#simu-index .c-title{font-weight:700;margin-top:2px}
+#simu-index .c-calc{margin:var(--space-2) 0;padding:var(--space-2) var(--space-3);background:var(--surface-000);border:1px solid var(--border);font-size:15px;line-height:22px;font-weight:700;overflow-wrap:anywhere}
+#simu-index .c-line{font-size:14px;line-height:20px;color:var(--ink-secondary);margin-top:2px}
+#simu-index .c-node.old .c-title,#simu-index .c-node.old .c-calc{color:var(--ink-secondary)}
+#simu-index .c-seg{position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:4px var(--space-3);margin:calc(-1*var(--space-3)) 0 var(--space-5) 30px;padding:var(--space-2) var(--space-3);border-left:0;background:var(--accent-soft);font-size:14px;line-height:20px}
+#simu-index .c-seg::before{content:"";position:absolute;left:-25px;top:-12px;bottom:-24px;width:1px;background:var(--ink-muted)}
+#simu-index .c-seg.old{background:var(--surface-000);color:var(--ink-secondary);border:1px dashed var(--border)}
+#simu-index .c-op{font-weight:700}
+#simu-index .exemple{margin-top:var(--space-6);padding-top:var(--space-5);border-top:1px solid var(--ink)}
+#simu-index .ex-title{font-size:22px;line-height:28px;margin-bottom:var(--space-3);text-wrap:balance}
+#simu-index .ex-intro{color:var(--ink-secondary);max-width:65ch;margin-bottom:var(--space-4)}
+#simu-index .steps{list-style:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3) var(--space-5);margin-bottom:var(--space-5)}
+#simu-index .steps li{display:flex;gap:var(--space-2);font-size:15px;line-height:22px}
+@media (max-width:640px){#simu-index .steps{grid-template-columns:1fr}}
+
 #simu-index .page-footer{margin-top:var(--space-6);padding-top:var(--space-4);border-top:1px solid var(--border);font-size:13px;line-height:19px;color:var(--ink-secondary)}
 
 @media (max-width:640px){
