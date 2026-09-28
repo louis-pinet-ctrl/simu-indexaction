@@ -96,6 +96,17 @@
 #simu-index .contact-intro{padding:var(--space-4) 0;border-top:1px solid var(--ink);border-bottom:1px solid var(--border);margin-bottom:var(--space-6)}
 #simu-index .contact-intro .label{margin-bottom:var(--space-2);color:var(--ink)}
 
+/* Paliers de paiement */
+#simu-index .palier{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto;gap:var(--space-2);align-items:center;margin-bottom:var(--space-2)}
+#simu-index .palier span{font-size:14px;color:var(--ink-secondary)}
+#simu-index .btn-x{flex:none;width:40px;padding:10px 0;background:transparent;border:1px solid var(--border);color:var(--ink-secondary);font-size:18px;line-height:1}
+#simu-index .btn-x:hover{border-color:var(--ink);color:var(--ink)}
+#simu-index .btn-mini{flex:none;padding:10px 16px;font-size:14px;margin-top:var(--space-2)}
+#simu-index .plus{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-4);margin:calc(-1*var(--space-3)) 0 var(--space-5);font-size:14px;line-height:20px}
+#simu-index .plus>div{padding-top:var(--space-2);border-top:1px solid var(--border)}
+#simu-index .plus strong{display:block;font-size:18px;line-height:24px;font-variant-numeric:tabular-nums}
+@media (max-width:640px){#simu-index .palier{grid-template-columns:1fr auto}#simu-index .palier span{grid-column:1/-1}#simu-index .plus{grid-template-columns:1fr}}
+
 /* Résultats */
 #simu-index .summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--ink);border-bottom:1px solid var(--border);margin-bottom:var(--space-5)}
 #simu-index .kpi{padding:var(--space-4) var(--space-3) var(--space-4) 0}

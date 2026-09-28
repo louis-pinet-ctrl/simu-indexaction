@@ -19,6 +19,7 @@
 <h1>Simulateur d'indexation du loyer</h1>
 <p class="lead">Calculez le loyer indexé, le rattrapage exigible et les sommes prescrites. Indices officiels INSEE, publiés au Journal officiel. <span id="indices-maj"></span></p>
 <p class="lead-link"><a href="#simulateur">Aller directement au simulateur</a></p>
+<div class="alert alert-warning" id="indices-alerte" hidden></div>
 </header>
 <section class="exemple" id="exemple">
 <p class="label">Exemple commenté</p>
@@ -78,7 +79,7 @@
 <select id="ref_trim" aria-label="Trimestre de référence"><option value="1">1er trimestre</option><option value="2">2e trimestre</option><option value="3">3e trimestre</option><option value="4">4e trimestre</option></select>
 <select id="ref_annee" aria-label="Année de référence"></select>
 </div>
-<p class="help" id="ref-help">C'est le point de départ du calcul&nbsp;: le loyer évolue comme l'indice depuis ce trimestre. La clause le désigne de deux façons&nbsp;: un trimestre précis («&nbsp;l'indice du 4e trimestre 2019&nbsp;») ou «&nbsp;le dernier indice publié à la date de prise d'effet&nbsp;». Dans ce second cas, nous le proposons d'après la date saisie. Corrigez-le si la clause en désigne un autre.</p>
+<p class="help" id="ref-help">C'est le point de départ du calcul&nbsp;: le loyer évolue comme l'indice depuis ce trimestre. La clause le désigne de deux façons&nbsp;: un trimestre précis («&nbsp;l'indice du 4e trimestre 2019&nbsp;») ou «&nbsp;le dernier indice publié à la date de prise d'effet&nbsp;». Dans ce second cas, nous le proposons d'après la date saisie, en supposant une publication vers le 20 du dernier mois du trimestre suivant. Si votre date tombe entre le 15 et le 25 de ce mois, vérifiez le trimestre sur l'avis d'échéance ou le site de l'INSEE.</p>
 <div class="info-box" id="ref-valeur" hidden></div>
 </div>
 <div class="form-group">
@@ -87,7 +88,19 @@
 <label class="radio-option"><input type="radio" name="periode" value="1" checked><span>Chaque année</span></label>
 <label class="radio-option"><input type="radio" name="periode" value="3"><span>Tous les trois ans</span></label>
 </div>
-<p class="help">Le plus souvent chaque année, à la date anniversaire du bail. Une indexation tous les trois ans est plus rare&nbsp;: ne la confondez pas avec la révision triennale légale, qui suppose une demande.</p>
+<p class="help">Le plus souvent chaque année. Une indexation tous les trois ans est plus rare&nbsp;: ne la confondez pas avec la révision triennale légale, qui suppose une demande.</p>
+</div>
+<div class="form-group">
+<label for="premiere_index">Date de la première indexation *</label>
+<input type="date" id="premiere_index" required data-auto="1">
+<p class="help">Proposée un an après la prise d'effet. Certains baux indexent à date fixe, par exemple «&nbsp;le 1er janvier de chaque année&nbsp;»&nbsp;: indiquez alors le premier 1er janvier concerné. Les indexations suivantes tombent à la même date, chaque année ou tous les trois ans.</p>
+</div>
+<div class="form-group">
+<label>Quel indice sert de comparaison à chaque indexation&nbsp;? *</label>
+<div class="radio-group">
+<label class="radio-option"><input type="radio" name="comp_mode" value="meme" checked><span><span class="opt-title">Le même trimestre que l'indice de base, un an plus tard</span><span class="opt-ex">«&nbsp;l'indice du même trimestre de l'année suivante&nbsp;», ou rien de précisé</span><span class="opt-note">Le calcul compare douze mois d'indice à chaque indexation, trente-six pour une indexation triennale.</span></span></label>
+<label class="radio-option"><input type="radio" name="comp_mode" value="dernier"><span><span class="opt-title">Le dernier indice publié à la date d'indexation</span><span class="opt-ex">«&nbsp;le dernier indice publié à la date de révision&nbsp;»</span><span class="opt-note">Le simulateur retient le dernier trimestre paru à chaque date. Il vérifie que la clause ne compare pas plus de mois d'indice que de mois de loyer&nbsp;: c'est la <span class="tip" tabindex="0" data-g="distorsion">distorsion</span>, qui rend la clause réputée non écrite.</span></span></label>
+</div>
 </div>
 <div id="step1-error" class="alert alert-danger" hidden></div>
 <div class="button-group">
@@ -106,7 +119,8 @@
 <label>1. Dans quel sens le loyer peut-il varier&nbsp;? *</label>
 <div class="radio-group">
 <label class="radio-option"><input type="radio" name="sens" value="symetrique" checked><span><span class="opt-title">À la hausse comme à la baisse</span><span class="opt-ex">«&nbsp;Le loyer sera indexé chaque année en fonction de la variation de l'indice des loyers commerciaux publié par l'INSEE.&nbsp;»</span><span class="opt-note">Le cas le plus courant. Si la clause ne dit rien sur le sens, l'indice joue dans les deux sens.</span></span></label>
-<label class="radio-option"><input type="radio" name="sens" value="hausse"><span><span class="opt-title">Seulement à la hausse</span><span class="opt-ex">«&nbsp;L'indexation ne jouera qu'en cas de hausse de l'indice.&nbsp;» ou «&nbsp;Le loyer ne pourra en aucun cas être inférieur au loyer de base.&nbsp;»</span><span class="opt-note">Toute phrase qui empêche le loyer de baisser quand l'indice baisse.</span></span></label>
+<label class="radio-option"><input type="radio" name="sens" value="hausse"><span><span class="opt-title">Seulement à la hausse</span><span class="opt-ex">«&nbsp;L'indexation ne jouera qu'en cas de hausse de l'indice.&nbsp;»</span><span class="opt-note">Toute phrase qui empêche le loyer de baisser quand l'indice baisse.</span></span></label>
+<label class="radio-option"><input type="radio" name="sens" value="plancher"><span><span class="opt-title">Peut baisser, mais jamais sous le loyer de départ</span><span class="opt-ex">«&nbsp;Le loyer ne pourra en aucun cas être inférieur au loyer initial.&nbsp;»</span><span class="opt-note">Clause «&nbsp;plancher&nbsp;»&nbsp;: la baisse est écartée dès qu'elle passerait sous le loyer de départ. Elle est traitée comme une clause à la hausse seule.</span></span></label>
 <label class="radio-option"><input type="radio" name="sens" value="tunnel"><span><span class="opt-title">Variation encadrée dans les deux sens</span><span class="opt-ex">«&nbsp;La variation annuelle du loyer ne pourra excéder 3&nbsp;%, à la hausse comme à la baisse.&nbsp;»</span><span class="opt-note">On parle de clause «&nbsp;<span class="tip" tabindex="0" data-g="tunnel">tunnel</span>&nbsp;». Le plafond doit être le même dans les deux sens.</span></span></label>
 <label class="radio-option"><input type="radio" name="sens" value="forfait"><span><span class="opt-title">Hausse fixe chaque année, sans indice</span><span class="opt-ex">«&nbsp;Le loyer sera augmenté de 2&nbsp;% chaque année.&nbsp;»</span><span class="opt-note">Aucun indice INSEE n'est cité&nbsp;: le bail fixe lui-même le pourcentage.</span></span></label>
 <label class="radio-option"><input type="radio" name="sens" value="inconnu"><span><span class="opt-title">Je ne sais pas</span><span class="opt-note">Le calcul appliquera l'indice dans les deux sens, comme le prévoit la loi pour une échelle mobile. Le résultat signalera ce point à vérifier.</span></span></label>
@@ -162,6 +176,22 @@
 <input type="date" id="date_paye" required>
 <p class="help">Date de la dernière indexation réellement appliquée. Si l'indexation n'a jamais été appliquée, indiquez la date de prise d'effet du loyer.</p>
 </div>
+<div class="form-group" id="paliers-group">
+<label>Le montant payé a-t-il changé avant cette date&nbsp;?</label>
+<p class="help">Si le bailleur a appliqué certaines indexations et pas d'autres, indiquez chaque montant payé et la date depuis laquelle il l'a été. Avant le plus ancien, le simulateur suppose un loyer payé conformément à la clause.</p>
+<div id="paliers"></div>
+<button type="button" class="btn-secondary btn-mini" onclick="ajouterPalier()">Ajouter un montant antérieur</button>
+</div>
+<div class="inline-2">
+<div class="form-group"><label for="depot_garantie">Dépôt de garantie versé (€)</label><input type="text" inputmode="decimal" id="depot_garantie" placeholder="ex : 6 000" autocomplete="off"></div>
+<div class="form-group"><label>Le bail l'indexe-t-il comme le loyer&nbsp;?</label><div class="radio-group row"><label class="radio-option"><input type="radio" name="depot_indexe" value="oui"><span>Oui</span></label><label class="radio-option"><input type="radio" name="depot_indexe" value="non" checked><span>Non, ou rien de prévu</span></label></div></div>
+</div>
+<p class="help help-top">Facultatif. Beaucoup de baux prévoient que le dépôt suit le loyer&nbsp;: le bailleur peut alors demander un complément après chaque indexation.</p>
+<div class="inline-2">
+<div class="form-group"><label for="date_med">Mise en demeure déjà envoyée&nbsp;? Sa date</label><input type="date" id="date_med"></div>
+<div class="form-group"><label>Le bailleur est-il une personne physique&nbsp;?</label><div class="radio-group row"><label class="radio-option"><input type="radio" name="bailleur_physique" value="non" checked><span>Non (société, SCI)</span></label><label class="radio-option"><input type="radio" name="bailleur_physique" value="oui"><span>Oui</span></label></div></div>
+</div>
+<p class="help help-top">Facultatif. Les intérêts au taux légal courent de la mise en demeure (article 1344-1 du code civil). Le taux est plus élevé lorsque le créancier est une personne physique qui n'agit pas pour ses besoins professionnels.</p>
 <div class="inline-2">
 <div class="form-group"><label for="ca">Chiffre d'affaires annuel HT (€)</label><input type="text" inputmode="decimal" id="ca" placeholder="ex : 320 000" autocomplete="off"></div>
 <div class="form-group"><label for="charges">Charges refacturées (€ HT par an), si vous voulez les inclure</label><input type="text" inputmode="decimal" id="charges" placeholder="ex : 3 000" autocomplete="off"></div>
@@ -221,6 +251,7 @@
 <div class="step" id="results" hidden>
 <h2>Résultat</h2>
 <div class="summary" id="summary"></div>
+<div class="plus" id="summary-plus" hidden></div>
 <div id="alerts"></div>
 <section class="block">
 <p class="label">Votre chronologie</p>

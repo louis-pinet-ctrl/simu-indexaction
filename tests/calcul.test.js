@@ -85,4 +85,52 @@ t('prise d\'effet en cours de mois : prorata et rendus sans erreur',()=>{
 t('valeurs lues invraisemblables : aucune case cochée',()=>{
   assert.strictEqual(ctx.cocher('sens','x"]'),false);
 });
+t('indexation au 1er janvier : distorsion détectée en mode « même trimestre », pas en mode « dernier publié »',()=>{
+  const d={...base,dateEffet:parseDate('2020-07-01'),premiereIndex:parseDate('2021-01-01'),loyerRef:24000,refQ:qi(2020,1),loyerPaye:24000,datePaye:parseDate('2020-07-01'),dateCalc:parseDate('2026-09-28')};
+  const R=calculer({...d,compMode:'meme'});
+  assert.ok(R.distorsion&&R.distorsion.date.getTime()===parseDate('2021-01-01').getTime(),'distorsion attendue à la première indexation');
+  assert.strictEqual(Math.round(R.distorsion.moisIdx),12);assert.strictEqual(Math.round(R.distorsion.moisRev),6);
+  const D=calculer({...d,compMode:'dernier'});
+  assert.strictEqual(D.distorsion,null);assert.strictEqual(D.ev[0].comp,qi(2020,3));assert.strictEqual(D.ev[1].comp,qi(2021,3));
+});
+t('date de première indexation libre : les indexations suivent cette date, pas l\'anniversaire du bail',()=>{
+  const d={...base,dateEffet:parseDate('2019-03-15'),premiereIndex:parseDate('2020-01-01'),loyerRef:20000,refQ:qi(2018,4),loyerPaye:20000,datePaye:parseDate('2019-03-15'),dateCalc:parseDate('2026-09-28')};
+  const R=calculer(d);R.ev.forEach((e,k)=>{assert.strictEqual(e.date.getUTCMonth(),0);assert.strictEqual(e.date.getUTCFullYear(),2020+k)});
+});
+t('paliers de loyer payé : chaque année reprend le montant en vigueur',()=>{
+  const d={...base,dateEffet:parseDate('2023-01-01'),loyerRef:24000,refQ:qi(2022,3),dateCalc:parseDate('2025-12-31'),
+    paliers:[{date:parseDate('2025-01-01'),montant:25200},{date:parseDate('2023-01-01'),montant:24000}]};
+  const R=calculer(d);
+  assert.strictEqual(d.loyerPaye,25200);assert.strictEqual(d.datePaye.getTime(),parseDate('2023-01-01').getTime());
+  const a24=R.annees.find(a=>a.annee===2024),a25=R.annees.find(a=>a.annee===2025);
+  assert.ok(Math.abs(a24.paye-24000)<0.01,'payé 2024 '+a24.paye);assert.ok(Math.abs(a25.paye-25200)<0.01,'payé 2025 '+a25.paye);
+  assert.ok(Math.abs(R.exigible-(a24.ecart+a25.ecart+R.annees.find(a=>a.annee===2023).ecart))<0.01);
+});
+t('clause plancher : le loyer dû suit l\'indice à la baisse, le trop-payé apparaît',()=>{
+  const d={...base,sens:'plancher',dateEffet:parseDate('2024-07-01'),loyerRef:30000,refQ:qi(2024,3),dateCalc:parseDate('2026-09-28'),loyerPaye:30000,datePaye:parseDate('2024-07-01')};
+  const R=calculer(d);assert.ok(R.loyerDu<30000);assert.ok(R.exigible<0);
+  R.ev.forEach(e=>assert.ok(e.loyerHausse>=30000));
+});
+t('dépôt de garantie indexé : complément proportionnel au loyer dû',()=>{
+  const R=calculer({...EXEMPLE,depot:6000,depotIndexe:true});
+  assert.ok(R.depot);assert.strictEqual(R.depot.du,r(6000*R.loyerDu/24000));assert.strictEqual(R.depot.complement,r(R.depot.du-6000));
+  assert.strictEqual(calculer({...EXEMPLE,depot:6000,depotIndexe:false}).depot,null);
+});
+t('intérêts au taux légal : par échéance, depuis la mise en demeure, taux personne physique plus élevé',()=>{
+  const d={...EXEMPLE,dateMED:parseDate('2025-01-15'),bailleurPhysique:false};const R=calculer(d);
+  assert.ok(R.interets&&R.interets.total>0);
+  // assiette = échéances impayées non prescrites, positives
+  const att=R.detail.filter(p=>!p.prescrit&&p.du-p.paye>0.005).reduce((s,p)=>s+p.du-p.paye,0);
+  assert.ok(Math.abs(R.interets.assiette-att)<0.01,'assiette '+R.interets.assiette+' / '+att);
+  // borne haute : taux le plus fort sur toute l'assiette pendant toute la durée
+  const jours=(d.dateCalc-d.dateMED)/86400000;assert.ok(R.interets.total<att*0.0371*jours/365+0.01);
+  const P=calculer({...d,bailleurPhysique:true});assert.ok(P.interets.total>R.interets.total);
+  assert.strictEqual(calculer({...EXEMPLE,dateMED:null}).interets,null);
+  assert.ok(calculer({...d,dateMED:parseDate('2022-01-01')}).interets.tronque);
+});
+t('taux légal : série semestrielle ordonnée, taux personne physique toujours supérieur',()=>{
+  const T=vm.runInContext('TAUX_LEGAL',ctx);
+  for(let i=1;i<T.length;i++)assert.ok(T[i].debut>T[i-1].debut);
+  T.forEach(x=>assert.ok(x.pp>x.autres&&x.autres>0));
+});
 console.log(n+' tests passés');
