@@ -238,6 +238,62 @@ if(n>=2)ph.push(d.sens==='hausse'||d.sens==='forfait'?'Vérifiez d\'abord la val
 return{n,niv:NIVEAUX[n],ph,h,mois}}
 function ampleurHTML(A){if(!A)return'';return '<div class="verdict v-'+A.niv.cls+'"><p class="v-titre"><span class="pill st-'+A.niv.cls+'">'+A.niv.lib+'</span></p>'+A.ph.map(x=>'<p>'+x+'</p>').join('')+'<p class="v-note">Repères du cabinet'+NB+': hausse du loyer de moins de 5'+NB+'% modérée, de 5 à 10'+NB+'% sensible, de 10 à 25'+NB+'% forte, au-delà très forte. Un rattrapage de plus de trois mois de loyer compte comme forte augmentation, au-delà de six mois comme très forte.</p></div>'}
 
+
+// ---------- Lecture automatique du bail ----------
+const LECTURE_ENDPOINT='https://tcnzmfcmihwzoaaffgfz.supabase.co/functions/v1/lecture-bail';
+// Clé publique Supabase (rôle anon), faite pour être exposée côté navigateur : la fonction vérifie ce jeton.
+const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjbnptZmNtaWh3em9hYWZmZ2Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NDM4ODEsImV4cCI6MjA5MTExOTg4MX0.n_FqRrWFP7Y7hlfDUBkiBNHB_vE7L19IlRKB5tHw2JI';
+const LECTURE_MAX_FICHIERS=3,LECTURE_MAX_OCTETS=10*1024*1024;
+let bailLu=false;
+function initDepot(){const inp=document.getElementById('bail_fichiers'),ok=document.getElementById('bail_consent'),btn=document.getElementById('btn-lire');if(!inp)return;
+const maj=()=>{const f=[...inp.files];document.getElementById('depot-noms').textContent=f.length?f.map(x=>x.name).join(', '):'Aucun fichier choisi · 3 fichiers et 10'+NB+'Mo au plus';btn.disabled=!(f.length&&ok.checked)};
+inp.addEventListener('change',maj);ok.addEventListener('change',maj)}
+function lireFichier(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]);r.onerror=()=>rej(r.error);r.readAsDataURL(f)})}
+function etatDepot(m,cls){const e=document.getElementById('depot-etat');e.textContent=m;e.className='depot-etat'+(cls?' '+cls:'')}
+async function lireBail(){const inp=document.getElementById('bail_fichiers'),btn=document.getElementById('btn-lire'),f=[...inp.files];
+if(!document.getElementById('bail_consent').checked)return etatDepot('Cochez la case de consentement pour lancer la lecture.','err');
+if(!f.length||f.length>LECTURE_MAX_FICHIERS)return etatDepot('Déposez entre 1 et 3 fichiers.','err');
+if(f.some(x=>!['application/pdf','image/jpeg','image/png','image/webp'].includes(x.type)))return etatDepot('Formats acceptés'+NB+': PDF, JPEG, PNG ou WebP.','err');
+if(f.reduce((a,x)=>a+x.size,0)>LECTURE_MAX_OCTETS)return etatDepot('Fichiers trop lourds'+NB+': 10'+NB+'Mo au total au maximum. Déposez le bail sans ses annexes.','err');
+btn.disabled=true;etatDepot('Lecture en cours. Cela prend en général 20 à 60 secondes.','wait');
+try{const fichiers=await Promise.all(f.map(async x=>({type:x.type,data:await lireFichier(x)})));
+  const r=await fetch(LECTURE_ENDPOINT,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+SUPABASE_ANON,apikey:SUPABASE_ANON},body:JSON.stringify({fichiers,consentement:true})});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok||!j.donnees)throw new Error(j.erreur||'La lecture n\'a pas abouti. Remplissez les cases à la main.');
+  appliquerLecture(j.donnees);bailLu=true;etatDepot('Lecture terminée. Vérifiez les réponses ci-dessous, puis les cases pré-remplies.','ok')}
+catch(e){etatDepot((e&&e.message&&!/fetch|network/i.test(e.message))?e.message:'La lecture automatique est indisponible pour le moment. Remplissez les cases à la main.','err')}
+finally{btn.disabled=false}}
+function cocher(name,val){const el=document.querySelector('#simu-index input[name="'+name+'"][value="'+val+'"]');if(el){el.checked=true;el.dispatchEvent(new Event('change',{bubbles:true}))}return!!el}
+function badge(id){const el=document.getElementById(id)||document.querySelector('#simu-index input[name="'+id+'"]');const g=el&&el.closest('.form-group');if(!g)return;const l=g.querySelector('label');if(l&&!l.querySelector('.badge-lu'))l.insertAdjacentHTML('beforeend',' <span class="badge-lu">Lu dans le bail</span>')}
+function appliquerLecture(x){document.querySelectorAll('#simu-index .badge-lu').forEach(b=>b.remove());
+const vu=c=>c&&c.confiance!=='absent'&&c.valeur!==''&&c.valeur!=='inconnu'&&c.valeur!==0;
+if(vu(x.indice)&&cocher('indice',x.indice.valeur))badge('indice');
+if(vu(x.date_effet)&&/^\d{4}-\d{2}-\d{2}$/.test(x.date_effet.valeur)){const el=document.getElementById('date_effet');el.value=x.date_effet.valeur;el.dispatchEvent(new Event('change',{bubbles:true}));badge('date_effet')}
+if(vu(x.loyer_annuel_ht)){document.getElementById('loyer_ref').value=new Intl.NumberFormat('fr-FR',{maximumFractionDigits:2}).format(x.loyer_annuel_ht.valeur);badge('loyer_ref')}
+if(x.indice_base_mode&&x.indice_base_mode.valeur==='trimestre_fixe'&&vu(x.indice_base_trimestre)&&vu(x.indice_base_annee)&&x.indice_base_annee.valeur>=2008){
+  document.getElementById('ref_trim').value=String(x.indice_base_trimestre.valeur);document.getElementById('ref_annee').value=String(x.indice_base_annee.valeur);afficherRef();badge('ref_annee')}
+else if(x.indice_base_mode&&x.indice_base_mode.valeur==='dernier_publie'){proposerRef();badge('ref_annee')}
+if(vu(x.periodicite)&&cocher('periode',x.periodicite.valeur==='triennale'?'3':'1'))badge('periode');
+if(vu(x.sens)&&cocher('sens',x.sens.valeur)){badge('sens');if(vu(x.taux)){document.getElementById(x.sens.valeur==='forfait'?'forfait_pct':'tunnel_pct').value=String(x.taux.valeur).replace('.',',')}}
+if(vu(x.jeu)&&cocher('jeu',x.jeu.valeur))badge('jeu');
+if(vu(x.echeances)&&cocher('terme',x.echeances.valeur==='trimestrielles'?'3':'1'))badge('terme');
+sauver();afficherLu(x)}
+const LIB_LU={date_effet:'Prise d\'effet du loyer',loyer_annuel_ht:'Loyer annuel HT',indice:'Indice',indice_base_mode:'Désignation de l\'indice de base',indice_base_trimestre:'Trimestre de base',indice_base_annee:'Année de base',periodicite:'Rythme d\'indexation',sens:'Sens de la clause',taux:'Pourcentage prévu',jeu:'Jeu de la clause',echeances:'Échéances'};
+const VAL_LU={trimestre_fixe:'un trimestre précis',dernier_publie:'le dernier indice publié à la prise d\'effet',annuelle:'chaque année',triennale:'tous les trois ans',symetrique:'dans les deux sens',hausse:'à la hausse seulement',tunnel:'encadrée (tunnel)',forfait:'hausse fixe',auto:'automatique',demande:'sur demande du bailleur',mensuelles:'mensuelles',trimestrielles:'trimestrielles'};
+function esc(t){return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function afficherLu(x){const el=document.getElementById('lu');let h='<p class="lu-titre">Ce que nous avons lu dans votre bail</p>';
+if(x.document_est_un_bail===false)h+='<div class="alert alert-danger"><strong>Document à vérifier</strong>Ce document ne semble pas être un bail commercial. Vérifiez le fichier ou remplissez les cases à la main.</div>';
+h+='<ul class="lu-liste">'+Object.keys(LIB_LU).map(k=>{const c=x[k];if(!c)return'';
+  if(k==='taux'&&!(c.valeur>0))return'';
+  if((k==='indice_base_trimestre'||k==='indice_base_annee')&&x.indice_base_mode&&x.indice_base_mode.valeur==='dernier_publie')return'';
+  const absent=c.confiance==='absent'||c.valeur===''||c.valeur==='inconnu'||c.valeur===0;
+  let v=absent?'Non trouvé':k==='date_effet'?fmtLong(parseDate(c.valeur)):k==='loyer_annuel_ht'?euro(c.valeur,true):k==='taux'?String(c.valeur).replace('.',',')+NB+'%':k==='indice_base_trimestre'?qLabel(qi(2000,c.valeur)).replace(' 2000',''):VAL_LU[c.valeur]||String(c.valeur);
+  const pill=absent?'<span class="pill st-warn">À compléter</span>':c.confiance==='certain'?'<span class="pill st-ok">Lu dans le bail</span>':'<span class="pill st-info">Déduit, à vérifier</span>';
+  return '<li><span class="lu-lib">'+LIB_LU[k]+'</span><span class="lu-val">'+esc(v)+' '+pill+'</span>'+(c.extrait?'<q class="lu-ext">'+esc(c.extrait)+'</q>'+(c.page?'<span class="lu-page">page '+c.page+'</span>':''):'')+'</li>'}).join('')+'</ul>';
+if(x.avertissements&&x.avertissements.length)h+='<div class="alert alert-warning"><strong>Points signalés à la lecture</strong>'+x.avertissements.map(a=>'<span class="lu-av">'+esc(a)+'</span>').join('')+'</div>';
+h+='<p class="note">La lecture automatique peut se tromper. Relisez chaque ligne et corrigez les cases si besoin. Le loyer payé aujourd\'hui et votre chiffre d\'affaires restent à saisir à l\'étape 3.</p>';
+el.innerHTML=h;el.hidden=false}
+
 // ---------- Contrôles juridiques ----------
 function controles(d,R){const a=[];
 if(d.sens==='hausse')a.push({niv:'danger',t:'Clause à la hausse seulement',m:'Une clause qui écarte la baisse est réputée non écrite (Cass. civ. 3e, 12 janvier 2022, n° 21-11.169). En principe, seule la stipulation qui écarte la baisse tombe : le calcul ci-dessous applique l\'indice dans les deux sens. Si la clause était jugée indivisible, le loyer dû redeviendrait le loyer de référence'+(R.restitTotale>0.5?' et le preneur pourrait récupérer '+euro(R.restitTotale)+' sur les cinq dernières années':'')+' (Cass. civ. 3e, 23 janvier 2025, n° 23-18.643).'});
@@ -273,7 +329,7 @@ document.querySelectorAll('#simu-index input[name="jeu"]').forEach(i=>i.addEvent
 document.getElementById('simu-index').addEventListener('input',sauver);
 document.getElementById('simu-index').addEventListener('change',e=>{if(e.target.type==='radio'){document.querySelectorAll('#simu-index input[name="'+e.target.name+'"]').forEach(i=>i.closest('.radio-option').classList.toggle('selected',i.checked))}sauver()});
 document.querySelectorAll('#simu-index input[type=radio]:checked').forEach(i=>i.closest('.radio-option').classList.add('selected'));
-majSens();majPME();afficherRef();renderExemple();initBulles();
+majSens();majPME();afficherRef();renderExemple();initBulles();initDepot();
 document.getElementById('demande-group').hidden=radio('jeu')!=='demande'});
 
 function proposerRef(){const d=parseDate(document.getElementById('date_effet').value);if(!d)return;
@@ -409,6 +465,6 @@ lines.forEach(l=>{if(y>282){doc.addPage();y=20}doc.text(l,20,y);y+=5.6});doc.sav
 let leadEnvoye=false;
 function sendLead(c,d,R){if(leadEnvoye)return;leadEnvoye=true;
 const corps={...c,simulateur:'indexation',loyer:d.loyerPaye,loyer_ref:d.loyerRef,date_effet:isoDate(d.dateEffet),indice:d.indice,indice_base:qKey(d.refQ),
-periode:d.periode,sens:d.sens,jeu:d.jeu,pme:d.pme,date_paye:isoDate(d.datePaye),loyer_du:R.loyerDu,ca:d.ca||null,charges:d.charges||null,rattrapage_exigible:R.exigible,montant_prescrit:R.prescrit};
+periode:d.periode,sens:d.sens,jeu:d.jeu,pme:d.pme,date_paye:isoDate(d.datePaye),loyer_du:R.loyerDu,bail_lu:bailLu,ca:d.ca||null,charges:d.charges||null,rattrapage_exigible:R.exigible,montant_prescrit:R.prescrit};
 try{fetch(LEAD_ENDPOINT,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(corps),keepalive:true}).catch(()=>{})}catch(e){}}
 function resetSim(){try{localStorage.removeItem('simu_index')}catch(e){}location.reload()}

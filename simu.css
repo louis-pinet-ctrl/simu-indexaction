@@ -156,6 +156,33 @@
 #simu-index .rules li{display:grid;grid-template-columns:40px minmax(0,1fr);gap:var(--space-2);padding:var(--space-4) 0;border-bottom:1px solid var(--border)}
 #simu-index .numeral{font-size:15px;line-height:22px;font-weight:700;color:var(--accent)}
 #simu-index .rules p{color:var(--ink-secondary);font-size:15px;line-height:23px;max-width:65ch}
+/* Dépôt et lecture du bail */
+#simu-index .visually-hidden{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#simu-index .depot{padding:var(--space-4);border:1px solid var(--ink);background:var(--surface-000);margin-bottom:var(--space-6);display:grid;gap:var(--space-3)}
+#simu-index .depot-titre{font-weight:700;font-size:17px}
+#simu-index .depot-texte{color:var(--ink-secondary);font-size:15px;line-height:22px}
+#simu-index .depot-ligne{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3)}
+#simu-index .depot-choix{flex:0 0 auto;margin:0;cursor:pointer;text-align:center;padding:10px 18px}
+#simu-index .depot-noms{font-size:14px;color:var(--ink-secondary);min-width:0;overflow-wrap:anywhere}
+#simu-index .depot-consent{display:flex;gap:var(--space-2);align-items:flex-start;font-weight:400;font-size:13px;line-height:19px;color:var(--ink-secondary);margin:0}
+#simu-index .depot-consent input{margin-top:3px;flex:none;accent-color:var(--ink)}
+#simu-index .depot-lire{justify-self:start;flex:0 0 auto}
+#simu-index .depot-etat{font-size:14px;min-height:20px}
+#simu-index .depot-etat.err{color:var(--bad)}
+#simu-index .depot-etat.ok{color:var(--ok);font-weight:700}
+#simu-index .depot-etat.wait{color:var(--ink-secondary)}
+#simu-index .lu{margin:calc(-1*var(--space-3)) 0 var(--space-6);padding:var(--space-4);border-top:2px solid var(--ok);background:var(--surface-000)}
+#simu-index .lu-titre{font-weight:700;margin-bottom:var(--space-3)}
+#simu-index .lu-liste{list-style:none;display:grid}
+#simu-index .lu-liste li{display:grid;grid-template-columns:200px minmax(0,1fr);gap:2px var(--space-4);padding:var(--space-2) 0;border-bottom:1px solid var(--border);font-size:14px;line-height:20px}
+#simu-index .lu-lib{color:var(--ink-secondary)}
+#simu-index .lu-val{font-weight:700}
+#simu-index .lu-ext{grid-column:2;font-style:italic;color:var(--ink-secondary);quotes:"« " " »"}
+#simu-index .lu-page{grid-column:2;font-size:12px;color:var(--ink-muted)}
+#simu-index .lu-av{display:block;margin-top:2px}
+#simu-index .badge-lu{display:inline-block;margin-left:6px;padding:1px 6px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--ok-soft);color:var(--ok);vertical-align:middle}
+@media (max-width:640px){#simu-index .lu-liste li{grid-template-columns:1fr}#simu-index .lu-ext,#simu-index .lu-page{grid-column:1}}
+
 /* Infobulles */
 #simu-index .tip{border-bottom:1px dotted currentColor;cursor:help;text-decoration:none}
 #simu-index .tip:focus-visible{outline:2px solid var(--accent-strong);outline-offset:2px}

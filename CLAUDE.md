@@ -32,3 +32,12 @@ Chaque trimestre, l'INSEE publie ILC, ILAT et ICC (fin mars, fin juin, fin septe
 ## Lead
 
 `simu.js` poste vers la fonction Edge Supabase `leads-site?src=indexation`. La version en production (v9) ne connaît pas cette source : voir `supabase/leads-site-indexation.md` avant de déployer.
+
+## Lecture automatique du bail
+
+- Fonction Edge Supabase `lecture-bail` (source : `supabase/functions/lecture-bail/index.ts`), déployée le 28/09/2026, `verify_jwt` activé : le navigateur envoie la clé publique `anon`.
+- Modèle `claude-opus-5-5`, sortie JSON contrainte par schéma, repli automatique `fallbacks: "default"` en cas de refus.
+- Secret à créer dans Supabase : `ANTHROPIC_API_KEY`. Sans lui, la fonction répond 503 et le simulateur invite à remplir à la main.
+- Garde-fous : origines autorisées (site et GitHub Pages), 3 fichiers et 10 Mo au plus, 5 lectures par IP et par heure, consentement obligatoire, aucun stockage ni journalisation du contenu.
+- Chaque valeur renvoyée porte l'extrait du bail et sa page ; le visiteur valide ou corrige avant de poursuivre.
+- RGPD : mentionner ce traitement (sous-traitant Anthropic) dans la politique de confidentialité du site et le registre des traitements.

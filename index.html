@@ -40,6 +40,20 @@
 <div class="step active" data-step="1">
 <h2>Le loyer de référence</h2>
 <p class="step-intro">Partez du dernier loyer fixé d'un commun accord ou par le juge&nbsp;: signature du bail, renouvellement ou avenant.</p>
+<div class="depot" id="depot">
+<p class="depot-titre">Gagnez du temps&nbsp;: déposez votre bail</p>
+<p class="depot-texte">Nous lisons le bail et ses avenants, puis nous remplissons les cases. Chaque réponse s'affiche avec le passage du bail qui la justifie&nbsp;: vous vérifiez avant de continuer.</p>
+<div class="depot-ligne">
+<label class="btn-secondary depot-choix" for="bail_fichiers">Choisir le bail (PDF ou photos)</label>
+<input type="file" id="bail_fichiers" accept="application/pdf,image/jpeg,image/png,image/webp" multiple class="visually-hidden">
+<span class="depot-noms" id="depot-noms">Aucun fichier choisi · 3 fichiers et 10&nbsp;Mo au plus</span>
+</div>
+<label class="depot-consent"><input type="checkbox" id="bail_consent"><span>J'accepte que le bail soit transmis au prestataire d'intelligence artificielle du cabinet (Anthropic) pour être lu. Le cabinet ne conserve pas le fichier. Seules les informations extraites s'affichent dans mon navigateur. Je peux masquer les noms des parties avant l'envoi.</span></label>
+<button type="button" class="btn-primary depot-lire" id="btn-lire" onclick="lireBail()" disabled>Lire mon bail</button>
+<p class="depot-etat" id="depot-etat" role="status" aria-live="polite"></p>
+</div>
+<div class="lu" id="lu" hidden></div>
+
 <div class="form-group">
 <label for="date_effet">Date de prise d'effet de ce loyer *</label>
 <input type="date" id="date_effet" required>
