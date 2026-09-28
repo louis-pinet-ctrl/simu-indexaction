@@ -277,7 +277,7 @@ function charger(){try{const o=JSON.parse(localStorage.getItem('simu_index'));if
 CHAMPS.forEach(id=>{if(o[id])document.getElementById(id).value=o[id]})}catch(e){}}
 
 function stepErr(s,m){const e=document.getElementById('step'+s+'-error')||document.getElementById('contact-error');e.textContent=m;e.hidden=false;e.scrollIntoView({block:'nearest'});clearTimeout(e._t);e._t=setTimeout(()=>e.hidden=true,7000)}
-function scrollToSim(){const el=document.getElementById('simu-index');if(el)el.scrollIntoView({block:'start',behavior:'smooth'})}
+function scrollToSim(){const el=document.getElementById('simulateur')||document.getElementById('simu-index');if(el)el.scrollIntoView({block:'start',behavior:'smooth'})}
 function goStep(n){document.querySelectorAll('#simu-index .step').forEach(s=>s.classList.toggle('active',+s.dataset.step===n));
 document.querySelectorAll('#simu-index .progress-step').forEach(p=>{const k=+p.dataset.step;p.classList.toggle('active',k===n);p.classList.toggle('completed',k<n)});currentStep=n;scrollToSim()}
 function nextStep(){if(validateStep(currentStep))goStep(currentStep+1)}
