@@ -156,7 +156,27 @@
 #simu-index .rules li{display:grid;grid-template-columns:40px minmax(0,1fr);gap:var(--space-2);padding:var(--space-4) 0;border-bottom:1px solid var(--border)}
 #simu-index .numeral{font-size:15px;line-height:22px;font-weight:700;color:var(--accent)}
 #simu-index .rules p{color:var(--ink-secondary);font-size:15px;line-height:23px;max-width:65ch}
-/* Chronologie */
+/* Frise courte */
+#simu-index .frise{list-style:none;margin-top:var(--space-4);border-top:1px solid var(--ink);font-variant-numeric:tabular-nums}
+#simu-index .f-row{display:grid;grid-template-columns:170px minmax(0,1fr) auto;gap:var(--space-1) var(--space-4);align-items:baseline;padding:10px 0;border-bottom:1px solid var(--border)}
+#simu-index .f-date{font-size:12px;line-height:16px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-secondary)}
+#simu-index .f-main{font-weight:700}
+#simu-index .f-side{font-size:14px;color:var(--ink-secondary);text-align:right}
+#simu-index .f-row.old .f-side{color:var(--ink-secondary)}
+#simu-index .f-row.cut{border-bottom:1px dashed var(--warn);background:var(--warn-soft);padding-left:var(--space-3);padding-right:var(--space-3)}
+#simu-index .f-row.cut .f-date,#simu-index .f-row.cut .f-main,#simu-index .f-row.cut .f-side{color:var(--warn)}
+#simu-index .f-row.end{border-top:1px solid var(--ink);border-bottom:0;padding-top:var(--space-3)}
+#simu-index .f-row.end .f-main{font-size:20px;color:var(--accent-strong)}
+#simu-index .calc-types{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-4);margin-top:var(--space-5)}
+#simu-index .ct{padding-top:var(--space-3);border-top:1px solid var(--ink)}
+#simu-index .ct-t{font-size:12px;line-height:16px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-secondary)}
+#simu-index .ct-v{font-weight:700;margin:var(--space-2) 0;font-variant-numeric:tabular-nums}
+#simu-index .ct-n{font-size:14px;line-height:20px;color:var(--ink-secondary)}
+#simu-index .detail{margin-top:var(--space-4)}
+#simu-index .detail summary{cursor:pointer;font-weight:700;text-decoration:underline;text-underline-offset:3px}
+@media (max-width:640px){#simu-index .f-row{grid-template-columns:1fr auto}#simu-index .f-date{grid-column:1/-1}#simu-index .calc-types{grid-template-columns:1fr}}
+
+/* Chronologie détaillée */
 #simu-index .chrono{list-style:none;margin-top:var(--space-4);font-variant-numeric:tabular-nums}
 #simu-index .c-node{position:relative;padding:0 0 var(--space-5) 30px}
 #simu-index .c-node::before{content:"";position:absolute;left:5px;top:8px;bottom:-8px;width:1px;background:var(--ink-muted)}

@@ -140,10 +140,33 @@ for(const it of items){if(it.seg){const g=it.seg,tot=(g.du-g.paye)*g.n,sg=v=>(v>
   h+='<li class="c-node '+it.cls+(old?' old':'')+'"><p class="c-date">'+fmtLong(it.t)+'</p><p class="c-title">'+it.titre+'</p>'+(it.calc?'<p class="c-calc">'+it.calc+'</p>':'')+it.lignes.map(x=>'<p class="c-line">'+x+'</p>').join('')+'</li>'}
 h+='<li class="c-node end"><p class="c-date">'+fmtLong(d.dateCalc)+'</p><p class="c-title">'+(o.titreFin||'Date du calcul')+'</p><p class="c-calc">'+fin+(R.prescrit>0.5?' Prescrit'+NB+': '+euro(R.prescrit,true)+'.':'')+'</p><p class="c-line">Loyer à appliquer désormais'+NB+': '+euro(R.loyerDu,true)+' HT par an. La prescription efface les échéances anciennes, pas le calcul'+NB+': ce loyer intègre toutes les indexations depuis l\'origine.</p><p class="c-line">Les totaux sont calculés sans arrondi intermédiaire. Un écart d\'un centime avec l\'addition des lignes est possible.</p></li></ol>';
 return h}
+
+// Frise courte : une ligne par date, l'écart annuel, la coupure de prescription, le total.
+function friseCourte(d,R,o){o=o||{};const I0=idx(d.indice,d.refQ),rows=[];
+rows.push({t:d.dateEffet,cls:'',main:'Loyer de départ'+NB+': '+euro(d.loyerRef,true),side:d.sens==='forfait'?'':d.indice+' '+nb(I0,d.indice)});
+R.ev.forEach(e=>{const ec=e.loyer-payeAu(d,R,e.date),tags=[];
+  if(e.flags.includes('bouclier'))tags.push('Bouclier 3,5'+NB+'%');
+  if(e.flags.includes('tunnel'))tags.push('Tunnel');
+  if(e.flags.includes('forfait'))tags.push('Hausse écartée');
+  else if(e.variation<0)tags.push('Baisse');
+  rows.push({t:e.date,cls:e.date<R.limite?'old':'',main:'Loyer dû'+NB+': '+euro(e.loyer,true),side:(Math.abs(ec)<0.005?'aucun écart':(ec>0?'non payé ':'payé en trop ')+euro(Math.abs(ec),true)+' par an'),tags})});
+if(R.limite>d.dateEffet)rows.push({t:R.limite,cls:'cut',main:'Limite de prescription',side:'Échéances antérieures perdues, loyer indexé acquis'});
+rows.sort((a,b)=>a.t-b.t);
+let h='<ol class="frise">'+rows.map(r=>'<li class="f-row '+r.cls+'"><span class="f-date">'+fmtLong(r.t)+'</span><span class="f-main">'+r.main+(r.tags||[]).map(x=>' <span class="pill pill-cap">'+x+'</span>').join('')+'</span><span class="f-side">'+r.side+'</span></li>').join('');
+const tot=R.exigible>=0?'Rattrapage exigible'+NB+': '+euro(R.exigible,true):'Trop-payé à restituer'+NB+': '+euro(-R.exigible,true);
+h+='<li class="f-row end"><span class="f-date">'+fmtLong(d.dateCalc)+'</span><span class="f-main">'+tot+'</span><span class="f-side">'+(o.fin||'Date du calcul')+(R.prescrit>0.5?' · '+euro(R.prescrit,true)+' prescrits':'')+'</span></li></ol>';
+return h}
+function calculsTypes(d,R){const I0=idx(d.indice,d.refQ),e1=R.ev[0],eb=R.ev.find(e=>e.flags.includes('bouclier')),g=segments(R).find(x=>x.prescrit===false);
+const c=[];
+if(e1)c.push({t:'La formule',v:euro(d.loyerRef,true)+' × '+nb(e1.valeur,d.indice)+' ÷ '+nb(I0,d.indice)+' = '+euro(e1.loyer,true),n:'Loyer × nouvel indice ÷ indice de base. Chaque année repart du loyer précédent.'});
+if(eb){const brut=idx(d.indice,eb.comp)/idx(d.indice,eb.comp-4)-1;c.push({t:'Le bouclier PME',v:euro(eb.prec,true)+' × 1,035 = '+euro(eb.loyer,true),n:'En '+eb.date.getUTCFullYear()+', l\'ILC monte de '+pct(brut)+'. La hausse est ramenée à 3,5'+NB+'%, définitivement.'})}
+if(R.limite>d.dateEffet&&g){const dueA=loyerEnVigueur(d,R.ev,g.debut,'loyer'),paidA=payeAu(d,R,g.debut);
+  c.push({t:'La prescription',v:euro(dueA-paidA,true)+' × '+(g.n*d.terme)+'/12 = '+euro((g.du-g.paye)*g.n,true),n:'Seuls comptent les mois postérieurs au '+fmtLong(R.limite)+'. Les mois antérieurs sont prescrits.'})}
+return '<div class="calc-types">'+c.map(x=>'<div class="ct"><p class="ct-t">'+x.t+'</p><p class="ct-v">'+x.v+'</p><p class="ct-n">'+x.n+'</p></div>').join('')+'</div>'}
 const EXEMPLE={indice:'ILC',periode:1,sens:'symetrique',tunnel:0,forfait:0,jeu:'auto',dateDemande:null,pme:true,terme:1,
 dateEffet:parseDate('2020-07-01'),loyerRef:24000,refQ:qi(2020,1),loyerPaye:24000,datePaye:parseDate('2020-07-01'),dateCalc:parseDate('2026-09-28')};
 function renderExemple(){const el=document.getElementById('chrono-exemple');if(!el||!window.INDICES)return;
-try{el.innerHTML=chronologie(EXEMPLE,calculer(EXEMPLE),{titreFin:'Le bailleur réclame le rattrapage'})}catch(e){}}
+try{const R=calculer(EXEMPLE);el.innerHTML=friseCourte(EXEMPLE,R,{fin:'Le bailleur réclame'})+calculsTypes(EXEMPLE,R)}catch(e){}}
 
 // ---------- Contrôles juridiques ----------
 function controles(d,R){const a=[];
@@ -250,7 +273,7 @@ document.getElementById('summary').innerHTML=
 '<div class="kpi"><div class="k-label">Écart avec le loyer payé</div><div class="k-value">'+(ecartAn>=0?'+':'−')+euro(Math.abs(ecartAn))+'</div><div class="k-sub">par an, sur la base de '+euro(d.loyerPaye)+' payés</div></div>'+
 '<div class="kpi hl"><div class="k-label">'+sensLbl+'</div><div class="k-value">'+euro(Math.abs(R.exigible))+'</div><div class="k-sub">échéances depuis le '+fmtDate(R.limite)+(R.prescrit>0.5?' · '+euro(R.prescrit)+' prescrits':'')+'</div></div>';
 document.getElementById('alerts').innerHTML=A.map(a=>'<div class="alert alert-'+(a.niv==='info'?'warning':a.niv)+'"><strong>'+a.t+'</strong>'+a.m+'</div>').join('');
-document.getElementById('chrono-resultat').innerHTML=chronologie(d,R);
+document.getElementById('chrono-resultat').innerHTML=friseCourte(d,R)+'<details class="detail"><summary>Voir le détail des calculs</summary>'+chronologie(d,R)+'</details>';
 const tb=document.querySelector('#table-index tbody');let h='<tr><td>'+fmtDate(d.dateEffet)+'</td><td>'+d.indice+' '+qLabel(d.refQ)+' · '+fr(idx(d.indice,d.refQ),d.indice==='ICC'?0:2)+'</td><td class="num">base</td><td class="num">'+euro(d.loyerRef,true)+'</td></tr>';
 R.ev.forEach(e=>{if(e.flags.includes('forfait')){h+='<tr><td>'+fmtDate(e.date)+'</td><td>Hausse forfaitaire écartée <span class="pill pill-cap">Réputée non écrite</span><br><span class="note">Clause appliquée : '+euro(e.loyerHausse,true)+'</span></td><td class="num">'+pct(0)+'</td><td class="num">'+euro(e.loyer,true)+'</td></tr>';return}const pills=e.flags.map(f=>' <span class="pill pill-cap">'+(f==='bouclier'?'Bouclier 3,5 %':'Tunnel')+'</span>').join('');
 h+='<tr><td>'+fmtDate(e.date)+'</td><td>'+d.indice+' '+qLabel(e.comp)+' · '+fr(e.valeur,d.indice==='ICC'?0:2)+pills+'</td><td class="num '+(e.variation>=0?'pos':'neg')+'">'+pct(e.variation)+'</td><td class="num">'+euro(e.loyer,true)+'</td></tr>'});
