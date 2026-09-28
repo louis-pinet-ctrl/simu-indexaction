@@ -185,6 +185,23 @@
 #simu-index .st-bad{background:var(--bad-soft);color:var(--bad)}
 @media (max-width:640px){#simu-index .ef-scale,#simu-index .ef-row{grid-template-columns:1fr auto}#simu-index .ef-row .ef-track,#simu-index .ef-scale .ef-track{grid-column:1/-1;grid-row:2}#simu-index .ef-scale span:first-child,#simu-index .ef-scale span:last-child{display:none}}
 
+/* Ampleur et taux d'effort de l'exemple */
+#simu-index .verdict{margin:var(--space-4) 0;padding:var(--space-4);border-top:2px solid var(--ink);background:var(--surface-000)}
+#simu-index .verdict.v-warn{border-top-color:var(--warn)}
+#simu-index .verdict.v-bad{border-top-color:var(--bad)}
+#simu-index .verdict.v-ok{border-top-color:var(--ok)}
+#simu-index .verdict p{font-size:15px;line-height:23px;margin-top:var(--space-1)}
+#simu-index .verdict .v-titre{margin:0 0 var(--space-2)}
+#simu-index .verdict .v-titre .pill{font-size:12px;padding:4px 10px}
+#simu-index .verdict .v-note{font-size:13px;line-height:19px;color:var(--ink-secondary);margin-top:var(--space-3)}
+#simu-index .ex-effort{margin-top:var(--space-6)}
+#simu-index .ef-mini{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-4);margin-top:var(--space-3);font-variant-numeric:tabular-nums}
+#simu-index .ef-mini>div{display:flex;flex-direction:column;padding-top:var(--space-2);border-top:1px solid var(--border)}
+#simu-index .ef-m-lib{font-size:14px;color:var(--ink-secondary)}
+#simu-index .ef-m-v{font-size:26px;line-height:32px;font-weight:700}
+#simu-index .ef-m-c{font-size:13px;line-height:18px;color:var(--ink-secondary)}
+@media (max-width:640px){#simu-index .ef-mini{grid-template-columns:1fr}}
+
 /* Frise courte */
 #simu-index .frise{list-style:none;margin-top:var(--space-4);border-top:1px solid var(--ink);font-variant-numeric:tabular-nums}
 #simu-index .f-row{display:grid;grid-template-columns:170px minmax(0,1fr) auto;gap:var(--space-1) var(--space-4);align-items:baseline;padding:10px 0;border-bottom:1px solid var(--border)}

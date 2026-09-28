@@ -69,6 +69,12 @@ t('taux d\'effort : avant, après, année du rattrapage',()=>{
   assert.strictEqual(L.length,4);
   assert.ok(Math.abs(L[0].v-27000/320000)<1e-9);
   assert.ok(Math.abs(L[2].v-(R.loyerDu+3000+R.exigible)/320000)<1e-9);
-  assert.strictEqual(tauxEffort({...EXEMPLE},R),null);
+  assert.strictEqual(tauxEffort({...EXEMPLE,ca:0},R),null);
+});
+t('ampleur : exemple qualifié de forte augmentation',()=>{
+  const R=calculer(EXEMPLE),A=ctx.ampleur(EXEMPLE,R);
+  assert.strictEqual(A.niv.lib,'Forte augmentation');
+  assert.ok(Math.abs(A.h-(26813.02/24000-1))<1e-9);
+  assert.ok(Math.abs(A.mois-9073.31/(26813.02/12))<1e-9);
 });
 console.log(n+' tests passés');
