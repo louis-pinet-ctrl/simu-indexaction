@@ -1,0 +1,32 @@
+# Simulateur d'indexation du loyer commercial
+
+Même architecture que `simu-valo-chr` (simulateur de valorisation), appliquée au bail commercial.
+
+## Structure
+
+- `index.html` : page autonome (GitHub Pages) = HTML du simulateur + `simu.css` + `indices.js` + `simu.js`.
+- `simu.css` : styles scopés sous `#simu-index`, jetons du design system « Louis Pinet Avocat » (Nunito, Lora pour le seul monogramme, `surface-100`, `ink`, `accent`, aucun arrondi, aucune ombre). Le bloc de rendez-vous suit la charte des blocs embed (fond sombre, terracotta).
+- `indices.js` : séries ILC, ILAT, ICC par trimestre (`window.INDICES`). Source unique : avis INSEE publiés au Journal officiel.
+- `simu.js` : moteur de calcul (indexations, bouclier PME, clause tunnel, échéances, prescription), contrôles juridiques, courriers, envoi du lead.
+- `webflow-embed.html` : bloc à coller dans l'Embed Webflow. Généré par `python3 build_embed.py`. À recoller seulement quand le HTML change.
+- `tests/calcul.test.js` : contrôle du moteur (`node tests/calcul.test.js`).
+
+## Mise à jour trimestrielle des indices
+
+Chaque trimestre, l'INSEE publie ILC, ILAT et ICC (fin mars, fin juin, fin septembre, fin décembre), puis l'avis paraît au Journal officiel.
+1. Rechercher au JORF « Avis relatif à l'indice des loyers commerciaux du … trimestre » (idem ILAT, ICC).
+2. Ajouter la valeur dans `indices.js` et mettre à jour `maj`.
+3. Lancer `node tests/calcul.test.js`, puis merger sur `main` : aucun recollage Webflow nécessaire.
+
+## Règles de fond appliquées (vérifiées sur Légifrance le 28/09/2026)
+
+- Indexation : art. L.112-1 et L.112-2 CMF ; clause à la hausse seule réputée non écrite, seule la stipulation prohibée tombe (Cass. 3e civ., 12 janv. 2022, n° 21-11.169).
+- Clause tunnel symétrique sur l'ILC : art. L.145-38-1 C. com. (loi n° 2026-403 du 26 mai 2026, en vigueur le 28/05/2026).
+- Bouclier ILC 3,5 % pour les PME, T2 2022 à T1 2024, définitivement acquis : loi n° 2022-1158, art. 14.
+- Rattrapage : prescription quinquennale par échéance (art. 2224 C. civ.).
+- Restitution au locataire : action en réputé non écrit imprescriptible, restitution sur 5 ans calculée sur le loyer non indexé (Cass. 3e civ., 23 janv. 2025, n° 23-18.643).
+- Révision : art. L.145-38 (triennale) et L.145-39 (variation de plus d'un quart, lissage 10 %).
+
+## Lead
+
+`simu.js` poste vers la fonction Edge Supabase `leads-site?src=indexation`. La version en production (v9) ne connaît pas cette source : voir `supabase/leads-site-indexation.md` avant de déployer.

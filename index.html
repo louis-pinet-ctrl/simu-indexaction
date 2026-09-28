@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Simulateur indexation bail commercial</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:wght@500&family=Nunito:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="simu.css">
+</head>
+<body>
+<div id="simu-index">
+<div class="masthead">
+<div class="wordmark"><span class="mark">LP</span><span class="wm-text"><span class="wm-name">Louis Pinet Avocat</span><span class="wm-eyebrow">Avocat des Restaurateurs</span></span></div>
+<a class="proof-rating" href="https://www.google.fr/maps/place/Louis+Pinet+Avocat/@47.2243345,-1.5694803,17z/data=!3m1!4b1!4m6!3m5!1s0x4805ed860141f9fd:0xff1eadb65493fbea!8m2!3d47.2243345!4d-1.5669054!16s%2Fg%2F11ptngndzg" target="_blank" rel="noopener">5,0 sur 5 sur Google · voir les avis</a>
+</div>
+<div class="container">
+<header class="sim-head">
+<p class="label">Bail commercial · Loyer</p>
+<h1>Simulateur d'indexation du loyer</h1>
+<p class="lead">Calculez le loyer indexé, le rattrapage exigible et les sommes prescrites. Indices officiels INSEE, publiés au Journal officiel. <span id="indices-maj"></span></p>
+</header>
+<ol class="progress-bar">
+<li class="progress-step active" data-step="1"><span class="num">01</span>Bail</li>
+<li class="progress-step" data-step="2"><span class="num">02</span>Clause</li>
+<li class="progress-step" data-step="3"><span class="num">03</span>Paiements</li>
+<li class="progress-step" data-step="4"><span class="num">04</span>Contact</li>
+</ol>
+<div class="content">
+
+<div class="step active" data-step="1">
+<h2>Le loyer de référence</h2>
+<p class="step-intro">Partez du dernier loyer fixé d'un commun accord ou par le juge : signature du bail, renouvellement ou avenant.</p>
+<div class="form-group">
+<label for="date_effet">Date de prise d'effet de ce loyer *</label>
+<input type="date" id="date_effet" required>
+<p class="help">Date d'entrée en jouissance, de renouvellement ou d'effet de l'avenant qui a fixé le loyer.</p>
+</div>
+<div class="form-group">
+<label for="loyer_ref">Loyer annuel fixé à cette date (€ HT, hors charges) *</label>
+<input type="text" inputmode="decimal" id="loyer_ref" required placeholder="ex : 24 000" autocomplete="off">
+</div>
+<div class="form-group">
+<label>Indice prévu au bail *</label>
+<div class="radio-group">
+<label class="radio-option"><input type="radio" name="indice" value="ILC" checked><span><strong>ILC</strong> · indice des loyers commerciaux (commerce, artisanat, restauration)</span></label>
+<label class="radio-option"><input type="radio" name="indice" value="ILAT"><span><strong>ILAT</strong> · indice des loyers des activités tertiaires (bureaux, professions libérales)</span></label>
+<label class="radio-option"><input type="radio" name="indice" value="ICC"><span><strong>ICC</strong> · indice du coût de la construction (baux anciens surtout)</span></label>
+</div>
+</div>
+<div class="form-group">
+<label for="ref_annee">Indice de base (trimestre de référence) *</label>
+<div class="inline-2">
+<select id="ref_trim" aria-label="Trimestre de référence"><option value="1">1er trimestre</option><option value="2">2e trimestre</option><option value="3">3e trimestre</option><option value="4">4e trimestre</option></select>
+<select id="ref_annee" aria-label="Année de référence"></select>
+</div>
+<p class="help" id="ref-help">Le bail vise souvent « le dernier indice publié à la date de prise d'effet ». Nous le proposons d'après la date saisie : vérifiez-le dans la clause.</p>
+<div class="info-box" id="ref-valeur" hidden></div>
+</div>
+<div class="form-group">
+<label>Périodicité de l'indexation *</label>
+<div class="radio-group row">
+<label class="radio-option"><input type="radio" name="periode" value="1" checked><span>Annuelle</span></label>
+<label class="radio-option"><input type="radio" name="periode" value="3"><span>Triennale</span></label>
+</div>
+</div>
+<div id="step1-error" class="alert alert-danger" hidden></div>
+<div class="button-group">
+<button type="button" class="btn-primary" onclick="nextStep()">Suivant</button>
+</div>
+</div>
+
+<div class="step" data-step="2">
+<h2>La clause d'indexation</h2>
+<p class="step-intro">Relisez la clause d'échelle mobile de votre bail. Sa rédaction décide du calcul et de sa validité.</p>
+<div class="form-group">
+<label>Dans quel sens la clause fait-elle varier le loyer ? *</label>
+<div class="radio-group">
+<label class="radio-option"><input type="radio" name="sens" value="symetrique" checked><span>À la hausse comme à la baisse</span></label>
+<label class="radio-option"><input type="radio" name="sens" value="hausse"><span>À la hausse seulement, ou jamais en dessous d'un loyer plancher</span></label>
+<label class="radio-option"><input type="radio" name="sens" value="tunnel"><span>Variation encadrée dans les mêmes proportions à la hausse et à la baisse (clause « tunnel »)</span></label>
+</div>
+<div class="alert alert-warning" id="sens-alert" hidden></div>
+</div>
+<div class="form-group" id="tunnel-group" hidden>
+<label for="tunnel_pct">Plafond annuel de variation prévu par la clause (%)</label>
+<input type="text" inputmode="decimal" id="tunnel_pct" placeholder="ex : 3" autocomplete="off">
+</div>
+<div class="form-group">
+<label>Comment l'indexation s'applique-t-elle ? *</label>
+<div class="radio-group">
+<label class="radio-option"><input type="radio" name="jeu" value="auto" checked><span>De plein droit, à chaque date anniversaire, sans formalité</span></label>
+<label class="radio-option"><input type="radio" name="jeu" value="demande"><span>Sur demande du bailleur</span></label>
+</div>
+</div>
+<div class="form-group" id="demande-group" hidden>
+<label for="date_demande">Date de la demande du bailleur, si elle a été faite</label>
+<input type="date" id="date_demande">
+<p class="help">Laissez vide si aucune demande n'a encore été adressée.</p>
+</div>
+<div class="form-group" id="pme-group">
+<label>Le locataire est-il une PME ?</label>
+<div class="radio-group row">
+<label class="radio-option"><input type="radio" name="pme" value="oui" checked><span>Oui</span></label>
+<label class="radio-option"><input type="radio" name="pme" value="non"><span>Non</span></label>
+</div>
+<p class="help">Moins de 250 salariés et 50 M€ de chiffre d'affaires ou 43 M€ de bilan. Une PME bénéficie du plafonnement de l'ILC à 3,5 % sur la période du 2e trimestre 2022 au 1er trimestre 2024.</p>
+</div>
+<div id="step2-error" class="alert alert-danger" hidden></div>
+<div class="button-group">
+<button type="button" class="btn-secondary" onclick="prevStep()">Précédent</button>
+<button type="button" class="btn-primary" onclick="nextStep()">Suivant</button>
+</div>
+</div>
+
+<div class="step" data-step="3">
+<h2>Ce qui est réellement payé</h2>
+<p class="step-intro">Le rattrapage se mesure par comparaison entre le loyer dû et le loyer effectivement réglé.</p>
+<div class="form-group">
+<label for="loyer_paye">Loyer annuel actuellement payé (€ HT, hors charges) *</label>
+<input type="text" inputmode="decimal" id="loyer_paye" required placeholder="ex : 24 000" autocomplete="off">
+</div>
+<div class="form-group">
+<label for="date_paye">Payé à ce montant depuis le *</label>
+<input type="date" id="date_paye" required>
+<p class="help">Date de la dernière indexation réellement appliquée. Si l'indexation n'a jamais été appliquée, indiquez la date de prise d'effet du loyer.</p>
+</div>
+<div class="form-group">
+<label>Échéances du loyer</label>
+<div class="radio-group row">
+<label class="radio-option"><input type="radio" name="terme" value="1" checked><span>Mensuelles</span></label>
+<label class="radio-option"><input type="radio" name="terme" value="3"><span>Trimestrielles</span></label>
+</div>
+</div>
+<div class="form-group">
+<label for="date_calcul">Date du calcul</label>
+<input type="date" id="date_calcul">
+<p class="help">Par défaut aujourd'hui. Pour un rattrapage, retenez la date à laquelle la demande sera formée : la prescription de cinq ans se compte à rebours depuis cette date.</p>
+</div>
+<div id="step3-error" class="alert alert-danger" hidden></div>
+<div class="button-group">
+<button type="button" class="btn-secondary" onclick="prevStep()">Précédent</button>
+<button type="button" class="btn-primary" onclick="nextStep()">Suivant</button>
+</div>
+</div>
+
+<div class="step" data-step="4">
+<div class="contact-intro">
+<p class="label">Dernière étape</p>
+<p>Renseignez vos coordonnées pour afficher le calcul détaillé et les modèles de courrier.</p>
+</div>
+<div class="form-group">
+<label for="profil_utilisateur">Vous êtes *</label>
+<select id="profil_utilisateur" required>
+<option value="">Sélectionnez</option>
+<option value="restaurateur">Restaurateur, locataire</option>
+<option value="commercant">Autre commerçant, locataire</option>
+<option value="bailleur">Bailleur, propriétaire des murs</option>
+<option value="gestionnaire">Administrateur de biens, gestionnaire</option>
+<option value="expert-comptable">Expert-comptable</option>
+<option value="avocat">Avocat</option>
+<option value="autre">Autre</option>
+</select>
+</div>
+<div class="inline-2">
+<div class="form-group"><label for="nom">Nom *</label><input type="text" id="nom" required autocomplete="family-name"></div>
+<div class="form-group"><label for="prenom">Prénom *</label><input type="text" id="prenom" required autocomplete="given-name"></div>
+</div>
+<div class="form-group"><label for="telephone">Téléphone *</label><input type="tel" id="telephone" required placeholder="06 12 34 56 78" autocomplete="tel"></div>
+<div class="form-group"><label for="email">Email *</label><input type="email" id="email" required autocomplete="email"></div>
+<div id="contact-error" class="alert alert-warning" hidden></div>
+<div class="button-group">
+<button type="button" class="btn-secondary" onclick="prevStep()">Précédent</button>
+<button type="button" class="btn-primary" id="btn-calculate" onclick="calculate()">Voir le calcul</button>
+</div>
+<p class="fine">Vos données servent uniquement à vous recontacter au sujet de votre bail.</p>
+</div>
+
+<div class="step" id="results" hidden>
+<h2>Résultat</h2>
+<div class="summary" id="summary"></div>
+<div id="alerts"></div>
+<section class="block">
+<p class="label">Loyer indexé, échéance par échéance</p>
+<div class="table-wrap"><table class="stat-table" id="table-index"><thead><tr><th>Date d'effet</th><th>Indice retenu</th><th class="num">Variation</th><th class="num">Loyer annuel dû</th></tr></thead><tbody></tbody></table></div>
+<p class="note" id="table-note"></p>
+</section>
+<section class="block" id="bloc-rattrapage">
+<p class="label">Rattrapage par année</p>
+<div class="table-wrap"><table class="stat-table" id="table-ratt"><thead><tr><th>Année</th><th class="num">Dû</th><th class="num">Payé</th><th class="num">Écart</th><th>Statut</th></tr></thead><tbody></tbody></table></div>
+<p class="note">Chaque échéance se prescrit cinq ans après sa date d'exigibilité (article 2224 du code civil). Les écarts plus anciens sont affichés pour mémoire.</p>
+</section>
+<section class="narrative-box">
+<p class="label">Modèles de courrier</p>
+<div class="narrative-roles" role="tablist">
+<button type="button" class="narrative-role active" data-role="preneur" onclick="switchRole('preneur')">Je suis locataire</button>
+<button type="button" class="narrative-role" data-role="bailleur" onclick="switchRole('bailleur')">Je suis bailleur</button>
+</div>
+<div class="narrative-tabs" data-role="preneur">
+<button type="button" class="narrative-tab active" data-type="analyse_p" onclick="switchNarrative('analyse_p')">Analyse</button>
+<button type="button" class="narrative-tab" data-type="courrier_p" onclick="switchNarrative('courrier_p')">Courrier au bailleur</button>
+</div>
+<div class="narrative-tabs" data-role="bailleur" hidden>
+<button type="button" class="narrative-tab active" data-type="analyse_b" onclick="switchNarrative('analyse_b')">Analyse</button>
+<button type="button" class="narrative-tab" data-type="courrier_b" onclick="switchNarrative('courrier_b')">Demande de rattrapage</button>
+</div>
+<div class="narrative-content" id="narrative-text"></div>
+<div class="narrative-actions">
+<button type="button" class="btn-primary" onclick="copyNarrative()">Copier le texte</button>
+<button type="button" class="btn-secondary" onclick="exportPDF()">Télécharger en PDF</button>
+<span class="copy-success" id="copy-success" hidden>Texte copié</span>
+</div>
+<div class="narrative-disclaimer">
+<strong>Modèles indicatifs, à ne pas envoyer tels quels.</strong>
+Ces textes sont générés à partir de vos réponses. Ils ne constituent ni une consultation, ni un décompte opposable. Un courrier mal calibré peut interrompre une prescription à votre détriment, reconnaître une dette ou ouvrir la voie à un commandement visant la clause résolutoire. Faites relire le calcul et le courrier avant tout envoi.
+</div>
+</section>
+<section class="cta-rdv">
+<span class="cta-rule"></span>
+<p class="cta-eyebrow">Indexation et loyer</p>
+<p class="cta-title">Votre bailleur réclame un rattrapage, ou votre locataire n'a jamais payé l'indexation&nbsp;?</p>
+<p class="cta-text">Un échange de 30 minutes pour exposer votre dossier&nbsp;: le bail, la clause d'indexation et les derniers avis d'échéance. Choisissez directement un créneau dans mon agenda.</p>
+<div class="cta-actions">
+<a class="btn-rdv" href="https://calendly.com/louispinet_avocatdesrestaurateurs/30min" target="_blank" rel="noopener">Prendre rendez-vous dans mon agenda</a>
+<p class="cta-alt">Vous préférez écrire&nbsp;? <a href="https://www.louispinetavocat.fr/contactez-moi">Passez par la page contact</a>.</p>
+</div>
+<div class="cta-foot"><p class="cta-sign"><span class="sign-name">Louis Pinet</span><span class="sign-dot">&#9679;</span><span class="sign-role"><i>A</i>vocat <i>d</i>es <i>R</i>estaurateurs</span></p></div>
+</section>
+<div class="button-group">
+<button type="button" class="btn-secondary" onclick="resetSim()">Nouvelle simulation</button>
+</div>
+</div>
+
+</div>
+
+<section class="explain">
+<p class="label">Comprendre l'indexation du loyer commercial</p>
+<ol class="rules">
+<li><span class="numeral">01</span><div><h3>La clause d'échelle mobile</h3><p>Le loyer suit l'indice choisi au bail, aux dates prévues, sans passer par le juge. L'indice doit avoir un lien direct avec l'activité ou l'immeuble. L'ILC vaut pour le commerce, l'artisanat et donc la restauration. L'ILAT vaut pour les activités tertiaires. L'ICC reste admis pour tout immeuble bâti (article L.&nbsp;112-2 du code monétaire et financier).</p></div></li>
+<li><span class="numeral">02</span><div><h3>Deux indices, une même période</h3><p>L'écart entre les deux indices comparés doit correspondre à l'intervalle entre deux révisions. Une clause qui compare sur une période plus longue est réputée non écrite (article L.&nbsp;112-1 du code monétaire et financier). Le simulateur compare toujours le même trimestre, à un ou trois ans d'écart.</p></div></li>
+<li><span class="numeral">03</span><div><h3>La clause qui ne joue qu'à la hausse</h3><p>Le propre d'une échelle mobile est de varier dans les deux sens. Une clause qui écarte la baisse est réputée non écrite (Cass. 3e civ., 12 janv. 2022, n°&nbsp;21-11.169, sur le fondement des articles L.&nbsp;145-39 et L.&nbsp;145-15 du code de commerce). Seule la stipulation prohibée tombe, sauf indivisibilité démontrée. Depuis le 28 mai 2026, la clause qui encadre la variation annuelle de l'ILC dans les mêmes proportions à la hausse et à la baisse est expressément admise (article L.&nbsp;145-38-1 du code de commerce).</p></div></li>
+<li><span class="numeral">04</span><div><h3>Le bouclier de 3,5 % pour les PME</h3><p>Pour une PME, la variation annuelle de l'ILC ne peut excéder 3,5 % pour les trimestres du 2e trimestre 2022 au 1er trimestre 2024. Ce plafonnement est définitivement acquis : une révision postérieure ne peut pas récupérer l'excédent (article 14 de la loi n°&nbsp;2022-1158 du 16 août 2022). Le simulateur l'applique si l'indice est l'ILC et le locataire une PME.</p></div></li>
+<li><span class="numeral">05</span><div><h3>Le rattrapage réclamé par le bailleur</h3><p>Le bailleur qui a oublié d'indexer peut en réclamer les effets. Chaque échéance se prescrit par cinq ans (article 2224 du code civil). Le silence du bailleur ne vaut pas renonciation, car une renonciation ne se présume pas. La règle d'un an propre aux baux d'habitation ne s'applique pas au bail commercial. Si la clause subordonne l'indexation à une demande, elle ne produit en principe effet qu'à compter de celle-ci.</p></div></li>
+<li><span class="numeral">06</span><div><h3>La restitution due au locataire</h3><p>L'action tendant à voir une clause réputée non écrite n'est pas prescrite. Le locataire récupère les sommes indûment versées dans les cinq ans précédant sa demande en justice. La restitution se calcule sur le loyer qui aurait été dû sans la stipulation écartée, et non sur le dernier loyer indexé (Cass. 3e civ., 23 janv. 2025, n°&nbsp;23-18.643).</p></div></li>
+<li><span class="numeral">07</span><div><h3>La révision quand le loyer a bougé d'un quart</h3><p>Dès que le jeu de la clause fait varier le loyer de plus de 25 % par rapport au dernier prix fixé, chaque partie peut demander sa révision à la valeur locative. La hausse qui en découle est limitée à 10 % par an (article L.&nbsp;145-39 du code de commerce).</p></div></li>
+<li><span class="numeral">08</span><div><h3>La révision triennale légale</h3><p>Indépendamment de la clause, une révision peut être demandée tous les trois ans. Elle est plafonnée à la variation de l'ILC ou de l'ILAT depuis la dernière fixation, sauf modification matérielle des facteurs locaux de commercialité ayant fait varier la valeur locative de plus de 10 % (article L.&nbsp;145-38 du code de commerce).</p></div></li>
+</ol>
+</section>
+
+<footer class="page-footer">Simulation indicative, fondée sur les indices publiés au Journal officiel et sur vos déclarations. Elle ne remplace pas la lecture du bail et de ses avenants. Louis Pinet, avocat au Barreau de Nantes, 4 rue d'Angoumois, 44000 Nantes.</footer>
+</div>
+</div>
+<script src="indices.js" charset="utf-8"></script>
+<script src="simu.js" charset="utf-8"></script>
+</body>
+</html>
